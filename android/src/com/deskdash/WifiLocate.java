@@ -20,6 +20,7 @@ class WifiLocate {
 
   /** Blocking network call: run on a background thread. Returns a Location or null (status says why). */
   Location lookup(Context c) {
+    android.util.Log.i(Main.TAG, "asking beaconDB");
     try {
       JSONObject req = new JSONObject();
       JSONArray aps = new JSONArray();

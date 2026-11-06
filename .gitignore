@@ -4,14 +4,21 @@
 
 # Android build output (release copies go in dist/)
 android/build/
+android/libs/
 
 # Generated or personal files on the laptop
 sync.log
 .phone_ip
+.phone_serial
+.todo_ops.json
+.todo_ops.json.pull
 .speedtest
+web/data.js
+web/todo.txt
 web/tasks.js
 web/photos.js
 web/photos/
+photos/
 
 # Python
 __pycache__/

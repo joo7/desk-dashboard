@@ -1,6 +1,8 @@
 package com.deskdash;
 
 import android.content.Context;
+import android.util.Log;
+import org.conscrypt.Conscrypt;
 import java.io.*;
 import java.net.*;
 import java.security.KeyStore;
@@ -8,13 +10,15 @@ import java.security.cert.*;
 import java.util.Collection;
 import javax.net.ssl.*;
 
-/** HTTP(S) for Android 4.4: turns on TLS 1.2 and trusts a few modern root certificates the old phone lacks. */
+/** HTTP(S) for Android 4.4: uses Conscrypt for modern TLS and trusts a few modern root certificates the old phone lacks. */
 class Net {
   static SSLSocketFactory factory;
+  static String agent = "DeskDash (personal desk dashboard)";
 
   static synchronized void init(Context ctx) {
     if (factory != null) return;
     try {
+      agent = "DeskDash/" + ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName + " (personal desk dashboard)";
       TrustManagerFactory sysF = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       sysF.init((KeyStore) null);
       final X509TrustManager sys = (X509TrustManager) sysF.getTrustManagers()[0];
@@ -35,10 +39,12 @@ class Net {
         }
         public X509Certificate[] getAcceptedIssuers() { return sys.getAcceptedIssuers(); }
       };
-      SSLContext ctxTls = SSLContext.getInstance("TLS");
+      // The platform's TLS has no AES-GCM or ChaCha20, which every server this app talks to requires.
+      SSLContext ctxTls = SSLContext.getInstance("TLS", Conscrypt.newProvider());
       ctxTls.init(null, new TrustManager[]{both}, null);
       factory = new Tls12(ctxTls.getSocketFactory());
-    } catch (Exception e) {
+    } catch (Throwable e) {  // includes a native library that will not load
+      Log.e(Main.TAG, "modern TLS unavailable", e);
       factory = HttpsURLConnection.getDefaultSSLSocketFactory();
     }
   }
@@ -51,16 +57,16 @@ class Net {
     if (c instanceof HttpsURLConnection && factory != null) ((HttpsURLConnection) c).setSSLSocketFactory(factory);
     c.setConnectTimeout(15000);
     c.setReadTimeout(20000);
-    c.setRequestProperty("User-Agent", "DeskDash/1.1 (personal desk dashboard)");
-    if (body != null) {
-      c.setDoOutput(true);
-      c.setRequestMethod("POST");
-      c.setRequestProperty("Content-Type", "application/json");
-      OutputStream os = c.getOutputStream();
-      os.write(body.getBytes("UTF-8"));
-      os.close();
-    }
+    c.setRequestProperty("User-Agent", agent);
     try {
+      if (body != null) {
+        c.setDoOutput(true);
+        c.setRequestMethod("POST");
+        c.setRequestProperty("Content-Type", "application/json");
+        OutputStream os = c.getOutputStream();
+        os.write(body.getBytes("UTF-8"));
+        os.close();
+      }
       if (c.getResponseCode() != 200) return null;
       BufferedReader in = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
       StringBuilder sb = new StringBuilder();
@@ -72,7 +78,7 @@ class Net {
     } finally { c.disconnect(); }
   }
 
-  /** Same factory, but every socket gets all supported protocols (TLS 1.2 is off by default before Android 5). */
+  /** Same factory, but every socket gets all supported protocols. */
   static class Tls12 extends SSLSocketFactory {
     final SSLSocketFactory f;
     Tls12(SSLSocketFactory f) { this.f = f; }

@@ -5,15 +5,16 @@
   app                    install the Desk app (DeskDash.apk): full screen, starts on boot; then push
   doctor                 run every check and show timings (use this when something is slow)
   push                   send everything to the phone and open it (USB or Wi-Fi)
-  image <file>           make this the picture (resized to the screen if ImageMagick exists) and push
-  photos <folder>        send all pictures in a folder (full resolution, colour); they rotate on the phone
-  todo list|add "text"|done N|undone N|rm N|edit     change the to-do list and push
-  tasks                  just rebuild tasks.js from todo.txt
+  pick <serial>          choose which device is the dashboard phone (only needed with several attached)
+  image <file>           show this one picture instead of the photo set (resized if ImageMagick exists) and push
+  photos [folder]        make the phone's photos match photos/ (or the folder given): adds new, removes deleted
+  todo list|add "text"|done N|undone N|rm N|edit     read or change the phone's to-do list
+  tasks                  just rebuild tasks.js
   (weather, air quality, sunrise/sunset and location are handled on the phone; settings are in web/data.js)
   fullscreen on|off      hide the phone's status and navigation bars in the Browser app
   location [on]          check the phone's location service ('on' switches it on, GPS + Wi-Fi)
 
-Paths: the page lives in web/, the app in dist/DeskDash.apk (or android/build/ after ./build.sh).
+Paths: the page lives in web/, the app in dist/DeskDash.apk (or android/build/ after android/build.sh).
 Every adb call is timed and written to sync.log in the repo folder (not committed).
 """
 import json, os, re, shutil, socket, subprocess, sys, time
@@ -22,6 +23,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repo fold
 WEB = os.path.join(ROOT, "web")                                       # everything sent to the phone
 DEST, PORT = "/sdcard/dash", "5555"
 TODO, IPFILE = os.path.join(WEB, "todo.txt"), os.path.join(ROOT, ".phone_ip")
+SERIALFILE, OPSFILE = os.path.join(ROOT, ".phone_serial"), os.path.join(ROOT, ".todo_ops.json")
+SRGB = ("/usr/share/color/icc/colord/sRGB.icc", "/usr/share/color/icc/ghostscript/srgb.icc")
+PHOTOS = os.path.join(ROOT, "photos")                                 # drop your pictures here, then run: sync.py photos
+STATE = DEST + "/todo-state.json"                                     # the phone's to-do list, written by the page
 LOG, T0, SER = os.path.join(ROOT, "sync.log"), time.time(), None
 HINT = {"unauthorized": "-> unlock the phone and tap OK on the 'Allow USB debugging' pop-up",
         "offline": "-> unplug and replug the cable, or toggle USB debugging off and on"}
@@ -69,8 +74,12 @@ def devices():
     return ok
 
 
+def saved_serial():
+    return open(SERIALFILE).read().strip() if os.path.exists(SERIALFILE) else ""
+
+
 def connect():
-    """Use USB if plugged in, otherwise Wi-Fi using the IP saved by 'setup'."""
+    """Find the dashboard phone, over Wi-Fi if possible (the USB link keeps freezing), and never any other device."""
     global SER
     d = devices()
     if os.path.exists(IPFILE) and not any(":" in s for s in d):
@@ -79,42 +88,146 @@ def connect():
         d = devices()
     if not d:
         sys.exit("Phone not found. Plug in USB (debugging on), or run: python3 tools/sync.py setup")
-    for s in sorted(d, key=lambda x: ":" not in x):  # Wi-Fi first: the USB link keeps freezing
+    found = {}                                     # hardware serial -> first working adb address (Wi-Fi sorted first)
+    for s in sorted(d, key=lambda x: ":" not in x):
         SER = s
-        if "ok" in run("shell", "echo", "ok", timeout=6):
-            log("using %s (%s)" % (SER, "Wi-Fi" if ":" in SER else "USB"))
-            return
-        log("%s is listed but not answering, trying the next one" % s)
-    sys.exit("Phone is listed but frozen. Unplug USB for 5s and replug (or toggle USB debugging), then retry.")
+        if "ok" not in run("shell", "echo", "ok", timeout=6):
+            log("%s is listed but not answering, trying the next one" % s)
+            continue
+        found.setdefault(run("shell", "getprop", "ro.serialno", timeout=6).strip() or s, s)
+    SER = None
+    if not found:
+        sys.exit("Phone is listed but frozen. Unplug USB for 5s and replug (or toggle USB debugging), then retry.")
+    want = saved_serial()
+    if want and want not in found:
+        sys.exit("The dashboard phone (%s) is not connected. Attached: %s\n"
+                 "If you replaced the phone, run: python3 tools/sync.py pick <serial>" % (want, ", ".join(sorted(found))))
+    if not want:
+        if len(found) > 1:
+            sys.exit("Several devices attached: %s\nChoose the dashboard phone: python3 tools/sync.py pick <serial>"
+                     % ", ".join(sorted(found)))
+        want = next(iter(found))
+        open(SERIALFILE, "w").write(want)
+        log("dashboard phone is now %s (saved in .phone_serial)" % want)
+    SER = found[want]
+    log("using %s (%s)" % (SER, "Wi-Fi" if ":" in SER else "USB"))
 
 
 def run(*a, timeout=30):
     return adb("-s", SER, *a, timeout=timeout)
 
 
-def read_todo():
-    return open(TODO).read().splitlines() if os.path.exists(TODO) else []
-
-
-def make_tasks():
+def parse_todo(lines):
+    """Turn '[x] text' lines into items."""
     items = []
-    for line in read_todo():
+    for line in lines:
         line = line.strip()
         if line:
             items.append({"t": re.sub(r"^\[[ xX]\]\s*", "", line), "done": line.lower().startswith("[x]")})
-    with open(os.path.join(WEB, "tasks.js"), "w") as f:
+    return items
+
+
+def format_todo(items):
+    return "".join("[%s] %s\n" % ("x" if i["done"] else " ", i["t"]) for i in items)
+
+
+def read_todo():
+    return parse_todo(open(TODO, encoding="utf-8").read().splitlines()) if os.path.exists(TODO) else []
+
+
+def write_todo(items):
+    with open(TODO, "w", encoding="utf-8") as f:
+        f.write(format_todo(items))
+
+
+def apply_ops(items, ops):
+    """What the page does with TODO_OPS (web/index.html, applyOps)."""
+    items = [dict(i) for i in items]
+    for o in ops:
+        hit = next((i for i in items if i["t"] == o["t"]), None)
+        if o["op"] == "add" and not hit:
+            items.append({"t": o["t"], "done": bool(o.get("done"))})
+        elif o["op"] in ("done", "undone") and hit:
+            hit["done"] = o["op"] == "done"
+        elif o["op"] == "rm" and hit:
+            items.remove(hit)
+    return items
+
+
+def diff_ops(old, new, first_id):
+    """The numbered changes that turn list old into list new."""
+    ops, was = [], {i["t"]: i for i in old}
+    keep = {i["t"] for i in new}
+    for i in old:
+        if i["t"] not in keep:
+            ops.append({"op": "rm", "t": i["t"]})
+    for i in new:
+        if i["t"] not in was:
+            ops.append({"op": "add", "t": i["t"], "done": i["done"]})
+        elif was[i["t"]]["done"] != i["done"]:
+            ops.append({"op": "done" if i["done"] else "undone", "t": i["t"]})
+    for n, o in enumerate(ops):
+        o["id"] = first_id + n
+    return ops
+
+
+def pending_ops(seq):
+    """Laptop changes the phone hasn't applied yet."""
+    if not os.path.exists(OPSFILE):
+        return []
+    return [o for o in json.load(open(OPSFILE, encoding="utf-8")) if o["id"] > seq]
+
+
+def phone_state():
+    """The phone's to-do list as (items, seq), or None if it has not written one yet."""
+    tmp = OPSFILE + ".pull"
+    run("pull", STATE, tmp, timeout=30)
+    if not os.path.exists(tmp):
+        return None
+    try:
+        with open(tmp, encoding="utf-8") as f:
+            st = json.load(f)
+        return st.get("items", []), st.get("seq", 0)
+    except ValueError:
+        log("WARNING: could not read the phone's to-do file")
+        return None
+    finally:
+        os.remove(tmp)
+
+
+def sync_todo():
+    """Read the list from the phone, include unapplied laptop changes, and mirror it to todo.txt.
+    Returns (items, pending changes, next change id). Without a phone list, todo.txt is the starting point."""
+    st = phone_state()
+    items, seq = st if st else (read_todo(), 0)
+    pending = pending_ops(seq)
+    items = apply_ops(items, pending)
+    write_todo(items)
+    return items, pending, max([seq] + [o["id"] for o in pending]) + 1
+
+
+def make_tasks(pending=None):
+    """tasks.js: the list that seeds a brand-new phone, and the changes waiting to be applied."""
+    if pending is None:
+        pending = json.load(open(OPSFILE, encoding="utf-8")) if os.path.exists(OPSFILE) else []
+    items = read_todo()
+    with open(os.path.join(WEB, "tasks.js"), "w", encoding="utf-8") as f:
         f.write("var TODO = " + json.dumps(items, ensure_ascii=False) + ";\n")
-    log("tasks.js rebuilt (%d items)" % len(items))
+        f.write("var TODO_OPS = " + json.dumps(pending, ensure_ascii=False) + ";\n")
+    log("tasks.js rebuilt (%d items, %d changes for the phone)" % (len(items), len(pending)))
 
 
 def push():
     step("sending files")
     connect()
-    make_tasks()
+    make_tasks(sync_todo()[1])
+    if not os.path.exists(os.path.join(WEB, "data.js")):
+        shutil.copy(os.path.join(WEB, "data.example.js"), os.path.join(WEB, "data.js"))
+        log("created web/data.js from data.example.js: edit it for your location")
     if not os.path.exists(os.path.join(WEB, "photos.js")):
         open(os.path.join(WEB, "photos.js"), "w").write("var PHOTOS = [];\n")
     run("shell", "mkdir", "-p", DEST)
-    for name in ("index.html", "data.js", "tasks.js", "photos.js", "photo.jpg"):
+    for name in ("index.html", "data.js", "tasks.js", "photos.js", "holidays.js", "photo.jpg", "photo.bw.jpg"):
         path = os.path.join(WEB, name)
         if os.path.exists(path):
             log("pushing %s (%d KB)" % (name, os.path.getsize(path) // 1024))
@@ -260,69 +373,120 @@ def location_check(args):
     log("If it says location is blocked: on the phone, allow Location for 'Desk' in Phone Manager > Permissions.")
 
 
+def prepare(src, dst):
+    """Make a sharp screen-sized JPEG and a grey copy (dst.bw.jpg). A CSS grey filter would blur the photo on the phone."""
+    # Phone cameras save in wider colour (Display P3); converting keeps the colours right, stripping alone would wash them out.
+    srgb = next((p for p in SRGB if os.path.exists(p)), None)
+    base = ["convert", src + "[0]", "-auto-orient"] + (["-profile", srgb] if srgb else []) + [
+            "-filter", "Lanczos", "-resize", "1280x1280>", "-strip",
+            "-unsharp", "0x0.6+0.6+0.01", "-sampling-factor", "1x1", "-quality", "93"]
+    subprocess.run(base + [dst], check=True)
+    subprocess.run(base + ["-colorspace", "Gray", dst[:-4] + ".bw.jpg"], check=True)
+    w, h = subprocess.run(["identify", "-format", "%w %h", dst], capture_output=True, text=True, check=True).stdout.split()
+    if max(int(w), int(h)) < 720:
+        log("WARNING: %s is only %sx%s pixels and will look blurry. Use a larger copy if you have one." % (os.path.basename(src), w, h))
+
+
 def image(src):
     dst = os.path.join(WEB, "photo.jpg")
     if shutil.which("convert"):
-        subprocess.run(["convert", src + "[0]", "-auto-orient", "-resize", "1280x1280>", "-strip", "-quality", "90", dst], check=True)
+        prepare(src, dst)
     else:
         print("ImageMagick not found (sudo apt install imagemagick): copying the file as it is.")
         shutil.copy(src, dst)
+    # a photo set would take priority over this picture; take it out of rotation (files stay, re-run 'photos' to restore)
+    open(os.path.join(WEB, "photos.js"), "w").write("var PHOTOS = [];\n")
     push()
 
 
-def photos(folder):
-    """Resize every picture in the folder, send them to the phone and list them in photos.js."""
+def photo_name(src):
+    """Phone file name for a picture: plain characters only, and the same every time so unchanged photos are skipped."""
+    return re.sub(r"[^A-Za-z0-9_-]", "_", src) + ".jpg"
+
+
+def photos(folder=None):
+    """Make the phone match the folder (default: photos/ in the repo): add new pictures, update changed ones, drop removed ones."""
+    folder = os.path.abspath(folder or PHOTOS)
+    out = os.path.join(WEB, "photos")
+    if folder == out:
+        sys.exit("web/photos/ is generated. Put your pictures in photos/ instead.")
+    if not os.path.isdir(folder):
+        sys.exit("Folder not found: " + folder)
+    if not shutil.which("convert"):
+        sys.exit("ImageMagick is needed for photos: sudo apt install imagemagick")
     exts = (".jpg", ".jpeg", ".png", ".webp", ".gif")
-    files = sorted(f for f in os.listdir(folder) if f.lower().endswith(exts))
+    all_files = sorted(os.listdir(folder))
+    files = [f for f in all_files if f.lower().endswith(exts)]
+    for f in all_files:
+        if f not in files:
+            log("skipped %s (not a .jpg .png .webp or .gif)" % f)
     if not files:
         sys.exit("No pictures (.jpg .png .webp .gif) found in " + folder)
     connect()
-    out = os.path.join(WEB, "photos")
-    shutil.rmtree(out, ignore_errors=True)
-    os.makedirs(out)
-    names = []
-    for n, f in enumerate(files, 1):
-        dst = os.path.join(out, "%03d.jpg" % n)
-        if shutil.which("convert"):
-            # full screen resolution, in colour (the phone can show it black-and-white), good quality
-            subprocess.run(["convert", os.path.join(folder, f) + "[0]", "-auto-orient", "-resize", "1280x1280>",
-                            "-strip", "-quality", "90", dst], check=True)
-        else:
-            dst = os.path.join(out, "%03d%s" % (n, os.path.splitext(f)[1].lower()))
-            shutil.copy(os.path.join(folder, f), dst)
-        names.append("photos/" + os.path.basename(dst))
-        log("prepared %s -> %s" % (f, names[-1]))
-    if not shutil.which("convert"):
-        log("ImageMagick not found (sudo apt install imagemagick): big photos are sent as they are and may load slowly")
-    open(os.path.join(WEB, "photos.js"), "w").write("var PHOTOS = " + json.dumps(names) + ";\n")
-    run("shell", "rm", "-r", DEST + "/photos", timeout=30)
+    os.makedirs(out, exist_ok=True)
+    names, changed = [], 0
+    for f in files:
+        name = photo_name(f)
+        dst, src = os.path.join(out, name), os.path.join(folder, f)
+        if not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
+            prepare(src, dst)
+            changed += 1
+            log("prepared " + f)
+        names.append(name)
+    wanted = set(names) | {n[:-4] + ".bw.jpg" for n in names}
+    for n in os.listdir(out):
+        if n not in wanted:
+            os.remove(os.path.join(out, n))
     run("shell", "mkdir", "-p", DEST + "/photos")
-    for nm in names:
-        run("push", os.path.join(WEB, nm), DEST + "/" + nm, timeout=90)
-    log("%d photos sent" % len(names))
+    listing = run("shell", "ls", "-l", DEST + "/photos", timeout=20)
+    sizes = {p[-1]: p[-4] for p in (l.split() for l in listing.splitlines()) if len(p) >= 6 and p[-1].endswith(".jpg")}
+    for n in sizes:
+        if n not in wanted:
+            run("shell", "rm", DEST + "/photos/" + n)
+    for n in sorted(wanted):
+        if sizes.get(n) != str(os.path.getsize(os.path.join(out, n))):
+            run("push", os.path.join(out, n), DEST + "/photos/" + n, timeout=90)
+    with open(os.path.join(WEB, "photos.js"), "w") as f:
+        f.write("var PHOTOS = " + json.dumps(["photos/" + n for n in names]) + ";\n")
+    log("%d photos on the phone (%d new or changed)" % (len(names), changed))
     push()
 
 
 def todo(args):
-    lines = [l for l in read_todo() if l.strip()]
     cmd = args[0] if args else "list"
-    if cmd == "edit":
-        subprocess.run([os.environ.get("EDITOR", "nano"), TODO])
-        return push()
-    if cmd == "add" and len(args) > 1:
-        lines.append("[ ] " + " ".join(args[1:]))
-    elif cmd in ("done", "undone", "rm") and len(args) > 1 and args[1].isdigit() and 0 < int(args[1]) <= len(lines):
-        i = int(args[1]) - 1
-        text = re.sub(r"^\[[ xX]\]\s*", "", lines[i].strip())
-        if cmd == "rm":
-            del lines[i]
+    if cmd == "list":
+        try:
+            connect()
+            items = sync_todo()[0]
+        except SystemExit as e:
+            print("%s\nShowing the last copy from todo.txt:" % e)
+            items = read_todo()
+    else:
+        connect()
+        items, pending, next_id = sync_todo()
+        new = [dict(i) for i in items]
+        if cmd == "edit":
+            subprocess.run([os.environ.get("EDITOR", "nano"), TODO])
+            new = read_todo()
+        elif cmd == "add" and len(args) > 1:
+            text = " ".join(args[1:]).strip()
+            if not any(i["t"] == text for i in new):
+                new.append({"t": text, "done": False})
+        elif cmd in ("done", "undone", "rm") and len(args) > 1 and args[1].isdigit() and 0 < int(args[1]) <= len(new):
+            i = int(args[1]) - 1
+            if cmd == "rm":
+                del new[i]
+            else:
+                new[i]["done"] = cmd == "done"
         else:
-            lines[i] = ("[x] " if cmd == "done" else "[ ] ") + text
-    elif cmd != "list":
-        sys.exit(__doc__)
-    open(TODO, "w").write("\n".join(lines) + "\n")
-    for n, l in enumerate(lines, 1):
-        print(n, l)
+            sys.exit(__doc__)
+        ops = pending + diff_ops(items, new, next_id)
+        with open(OPSFILE, "w", encoding="utf-8") as f:
+            json.dump(ops, f, ensure_ascii=False)
+        write_todo(new)
+        items = new
+    for n, i in enumerate(items, 1):
+        print(n, "[%s]" % ("x" if i["done"] else " "), i["t"])
     if cmd != "list":
         push()
 
@@ -332,6 +496,7 @@ if __name__ == "__main__":
     if not a:
         sys.exit(__doc__)
     if a[0] == "setup": setup()
+    elif a[0] == "pick" and len(a) > 1: open(SERIALFILE, "w").write(a[1]); print("dashboard phone is now " + a[1])
     elif a[0] == "doctor": doctor()
     elif a[0] == "push": push()
     elif a[0] == "app": install_app()
@@ -339,6 +504,6 @@ if __name__ == "__main__":
     elif a[0] == "fullscreen" and len(a) > 1: fullscreen(a[1])
     elif a[0] == "location": location_check(a[1:])
     elif a[0] == "image" and len(a) > 1: image(a[1])
-    elif a[0] == "photos" and len(a) > 1: photos(os.path.expanduser(a[1]))
+    elif a[0] == "photos": photos(os.path.expanduser(a[1]) if len(a) > 1 else None)
     elif a[0] == "todo": todo(a[1:])
     else: sys.exit(__doc__)
