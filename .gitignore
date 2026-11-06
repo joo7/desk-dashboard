@@ -1,0 +1,23 @@
+# App signing key: keep a private backup, never publish it
+*.keystore
+*.jks
+
+# Android build output (release copies go in dist/)
+android/build/
+
+# Generated or personal files on the laptop
+sync.log
+.phone_ip
+.speedtest
+web/tasks.js
+web/photos.js
+web/photos/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Desk</title>
+<style>
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:rgba(0,0,0,0)}
+html,body{height:100%;margin:0;overflow:hidden;background:#ecebe4;color:#111;font-family:Georgia,"Times New Roman",serif}
+#wrap{height:100%;padding:2.5vmin 3vmin;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+#colA{-webkit-flex:0 0 auto;flex:0 0 auto;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+#colC{-webkit-flex:1 1 auto;flex:1 1 auto;min-height:0;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;overflow:hidden}
+#time{font-size:72px;font-size:20vmin;line-height:1;letter-spacing:-2px}
+#date{margin-top:1.5vmin;padding-bottom:1.5vmin;border-bottom:3px solid #111;font-size:16px;font-size:4.4vmin;letter-spacing:3px;text-transform:uppercase}
+#frame{position:relative;margin-top:2.5vmin;height:150px;height:42vmin;border:2px solid #111;background-size:cover;background-position:center}
+#ph{position:absolute;top:0;left:0;right:0;bottom:0;
+ background:linear-gradient(to top right,transparent 49.4%,#111 49.7%,#111 50.3%,transparent 50.6%),linear-gradient(to bottom right,transparent 49.4%,#111 49.7%,#111 50.3%,transparent 50.6%)}
+#ph span{position:absolute;top:50%;left:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);background:#ecebe4;padding:2px 10px;font-size:13px;font-size:3.6vmin;letter-spacing:4px}
+.card{-webkit-flex:0 0 auto;flex:0 0 auto;margin-top:2.5vmin;padding:2vmin 3vmin;border:2px solid #111}
+.tl{font-size:12px;font-size:3.3vmin;letter-spacing:3px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wxt{font-size:60px;font-size:15vmin;line-height:1;letter-spacing:-2px}
+#wxd{font-size:20px;font-size:5.6vmin;margin-left:3vmin}
+#wxn{font-size:14px;font-size:3.8vmin;margin-top:.8vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hours{display:none;margin-top:1.5vmin;border-top:1px solid #111;padding-top:1vmin}
+.hr{-webkit-flex:1 1 0;flex:1 1 0;text-align:center;font-size:13px;font-size:3.6vmin;line-height:1.2}
+.hr i{display:block;font-size:85%;color:#555}
+#tiles{-webkit-flex:0 0 auto;flex:0 0 auto;display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin:1.5vmin -1vmin 0}
+.tile{-webkit-flex:1 1 20%;flex:1 1 20%;margin:1vmin;padding:1vmin 2vmin;border:2px solid #111;min-width:0}
+.tile .tl{letter-spacing:1px}
+.tv{font-size:22px;font-size:6vmin;line-height:1.1;white-space:nowrap}.tn{font-size:11px;font-size:3vmin;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h2{margin:0 0 1vmin;font-size:12px;font-size:3.4vmin;font-weight:normal;letter-spacing:3px;text-transform:uppercase;border-bottom:1px solid #111;padding-bottom:.6vmin;display:-webkit-flex;display:flex}
+#tht{-webkit-flex:1 1 auto;flex:1 1 auto}
+#add{padding:0 2vmin;letter-spacing:1px;border:1px solid #111;border-radius:2px}
+#todowrap{-webkit-flex:1 1 auto;flex:1 1 auto;min-height:0;overflow:hidden;margin-top:2vmin}
+.todo{margin:0;padding:0;list-style:none}
+.todo li{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:1.2vmin 0;border-bottom:1px dotted #777;font-size:19px;font-size:5vmin}
+.todo .tx{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.todo .del{-webkit-flex:0 0 auto;flex:0 0 auto;padding:0 1vmin 0 3vmin;color:#999;font-size:4.4vmin}
+.box{-webkit-flex:0 0 auto;flex:0 0 auto;display:inline-block;width:5vmin;height:5vmin;margin-right:2.5vmin;border:2px solid #111;text-align:center;line-height:4vmin;font-size:4vmin}
+.done .tx{color:#777;text-decoration:line-through}.done .box{background:#111;color:#ecebe4}
+#empty{color:#777;font-style:italic;font-size:4vmin;padding-top:1vmin}
+#upd{-webkit-flex:0 0 auto;flex:0 0 auto;font-size:10px;font-size:2.8vmin;text-align:right;color:#555;white-space:nowrap;overflow:hidden}
+#pv{position:fixed;top:0;left:0;right:0;bottom:0;display:none;background-color:#000;background-repeat:no-repeat;background-position:center;background-size:contain}
+body.photo #pv{display:block}body.photo #wrap{visibility:hidden}
+body.bw #frame,body.bw #pv{-webkit-filter:grayscale(1);filter:grayscale(1)}
+.cbtn{position:absolute;right:1.5vmin;bottom:1.5vmin;padding:.6vmin 2vmin;font:12px Georgia,serif;font-size:3.2vmin;letter-spacing:1px;
+ background:rgba(236,235,228,.85);color:#111;border:1px solid #111;border-radius:3vmin;z-index:2}
+#pv .cbtn{right:3vmin;bottom:3vmin;font-size:3.6vmin}
+@media (orientation:landscape){
+ #wrap{-webkit-flex-direction:row;flex-direction:row}
+ #colA{width:46%;margin-right:3vmin}
+ #time{font-size:24vmin}
+ #frame{-webkit-flex:1 1 auto;flex:1 1 auto;height:auto;margin-top:2.5vmin}
+ #colC .card{margin-top:0;padding:1.5vmin 3vmin}
+ #wxt{font-size:13vmin}
+}
+body.night{background:#161614;color:#b5b3ab}
+body.night #date,body.night #frame,body.night .tile,body.night .card,body.night .box,body.night h2,body.night #hours,body.night #add{border-color:#b5b3ab}
+body.night .todo li{border-color:#555}body.night #upd,body.night .hr i{color:#888}
+body.night .done .box{background:#b5b3ab;color:#161614}
+body.night #ph{background:none}body.night #ph span{background:#161614}
+body.night #frame,body.night #pv{-webkit-filter:brightness(.6)}
+body.night.bw #frame,body.night.bw #pv{-webkit-filter:grayscale(1) brightness(.6)}
+</style></head><body>
+<div id="wrap">
+ <noscript><p>JavaScript is off. Open this page in the Desk app or the Browser app.</p></noscript>
+ <div id="colA">
+  <div id="time">--:--</div><div id="date"></div>
+  <div id="frame"><div id="ph"><span>IMAGE</span></div><span class="cbtn" id="cb1"></span></div>
+ </div>
+ <div id="colC">
+  <div id="wx" class="card"><div class="tl" id="wxplace">Weather</div>
+   <div><span id="wxt">--</span><span id="wxd">waiting for data</span></div>
+   <div id="wxn"></div><div id="hours"></div></div>
+  <div id="tiles"></div>
+  <div id="todowrap"><h2><span id="tht">To do</span><span id="add">+ add</span></h2><ul class="todo" id="todo"></ul><div id="empty"></div></div>
+  <div id="upd"></div>
+ </div>
+</div>
+<div id="pv"><span class="cbtn" id="cb2"></span></div>
+<script src="data.js"></script><script src="tasks.js"></script><script src="photos.js"></script>
+<script>
+// Runs entirely on the phone. ES5 only (Android 4.4). No innerHTML: text goes in via textContent.
+// Swipe left/right: switch between the dashboard and the photo view. Tap a photo: next photo.
+window.onerror=function(m,u,l){status('JS error: '+m+' (line '+l+')','js');};
+var D=window.DASH||{},P=D.place||{},APP=!!(window.Android&&Android.get);
+var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var WX=null,AQ=null,BATT=null,MSG={},HERE=null;
+function $(i){return document.getElementById(i);}
+function p(n){return n<10?'0'+n:''+n;}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls){e.className=cls;}if(txt!==undefined){e.textContent=txt;}return e;}
+function clear(e){while(e.firstChild){e.removeChild(e.firstChild);}}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function now(){return new Date().getTime();}
+function hm(d){return p(d.getHours())+':'+p(d.getMinutes());}
+function status(s,key){MSG[key||'err']=s;var a=[],k;for(k in MSG){if(MSG[k]){a.push(MSG[k]);}}$('upd').textContent=a.join(' · ');}
+function cond(c){
+  return c===0?'Clear':c===1?'Mostly clear':c===2?'Partly cloudy':c===3?'Overcast':(c===45||c===48)?'Fog':c<58?'Drizzle':
+    c<68?'Rain':c<78?'Snow':c<83?'Showers':(c===85||c===86)?'Snow showers':c>=95?'Thunderstorm':'Mixed';
+}
+function km(a,b,c,d){var r=Math.PI/180,x=(d-b)*r*Math.cos((a+c)/2*r),y=(c-a)*r;return 6371*Math.sqrt(x*x+y*y);}
+
+// ---------- fetching: the Desk app fetches natively; a plain browser uses XMLHttpRequest. http first, then https.
+var CB={},CBN=0;
+window.nativeDone=function(id,text){var f=CB[id];delete CB[id];if(f){f(text);}};
+function getJSON(path,ok,fail){
+  var urls=['http://'+path,'https://'+path],i=0;
+  function next(){
+    if(i>=urls.length){fail();return;}
+    if(APP){
+      var id=++CBN;CB[id]=function(t){var j=null;if(t){try{j=JSON.parse(t);}catch(e){}}if(j){ok(j);}else{next();}};
+      Android.get(urls[i++],'nativeDone',id);return;
+    }
+    var x=new XMLHttpRequest(),done=false,u=urls[i++];
+    var t=setTimeout(function(){if(!done){done=true;try{x.abort();}catch(e){}next();}},20000);
+    x.onreadystatechange=function(){
+      if(x.readyState!==4||done){return;}
+      done=true;clearTimeout(t);
+      var j=null;if(x.status===200){try{j=JSON.parse(x.responseText);}catch(e){}}
+      if(j){ok(j);}else{next();}
+    };
+    try{x.open('GET',u,true);x.send();}catch(e){done=true;clearTimeout(t);next();}
+  }
+  next();
+}
+function q(o){var a=[],k;for(k in o){a.push(k+'='+encodeURIComponent(o[k]));}return a.join('&');}
+
+// ---------- where am I? The phone's own position (Desk app), else the place in data.js
+var locTries=0;
+function where(){
+  var l=null,names=lsGet('dash_names')||{},key,d;
+  if(APP&&P.auto!==false&&Android.location){try{l=JSON.parse(Android.location());}catch(e){}}
+  if(!l||typeof l.lat!=='number'){
+    if(APP&&P.auto!==false){
+      var why=!l?'app too old, run: tools/sync.py app':l.error?l.error:(l.providers==='[]'||!l.providers)?'no location source allowed ('+(l.all||'?')+')':'no fix yet from '+l.providers;
+      status('Location: '+why+(l&&l.wifi?'; Wi-Fi lookup: '+l.wifi:'')+'. Using '+(P.name||'data.js'),'loc');}
+    return {lat:P.lat,lon:P.lon,name:P.name,src:'data.js'};
+  }
+  status(l.provider==='gps'?'':'Location from '+l.provider+' \u00B1'+Math.round(l.acc)+' m','loc');
+  if(P.lat&&km(l.lat,l.lon,P.lat,P.lon)<3){return {lat:l.lat,lon:l.lon,name:P.name,src:l.provider};}
+  key=l.lat.toFixed(2)+','+l.lon.toFixed(2);
+  if(!names[key]&&Android.name){
+    var id=++CBN;CB[id]=function(n){if(n){names[key]=n;lsSet('dash_names',names);if(HERE&&HERE.key===key){HERE.name=n;showWeather();}}};
+    Android.name(l.lat,l.lon,'nativeDone',id);
+  }
+  return {lat:l.lat,lon:l.lon,name:names[key]||'Current location',src:l.provider,key:key};
+}
+function loadWeather(){
+  if(D.weather===false){return;}
+  lastTry=now();
+  HERE=where();
+  if(!HERE.lat){status('Set place in data.js','wx');return;}
+  if(HERE.src==='data.js'&&APP&&P.auto!==false&&locTries<6){locTries++;setTimeout(function(){if(where().src!=='data.js'){loadWeather();}},2*60000);}
+  var lat=HERE.lat.toFixed(3),lon=HERE.lon.toFixed(3);
+  getJSON('api.open-meteo.com/v1/forecast?'+q({latitude:lat,longitude:lon,timezone:'auto',forecast_days:2,
+      current:'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
+      hourly:'temperature_2m,weather_code',daily:'temperature_2m_max,temperature_2m_min,sunrise,sunset'}),
+    function(j){WX={d:j,ts:now(),name:HERE.name};lsSet('dash_wx',WX);status('','wx');showWeather();},
+    function(){status('Weather: no connection, retrying in 5 min','wx');});
+  getJSON('air-quality-api.open-meteo.com/v1/air-quality?'+q({latitude:lat,longitude:lon,timezone:'auto',current:'us_aqi,pm2_5'}),
+    function(j){AQ={d:j,ts:now()};lsSet('dash_aq',AQ);tiles();},function(){});
+}
+var lastTry=0;
+function weatherLoop(){
+  if(now()-lastTry>=(MSG.wx?5:30)*60000){loadWeather();}
+}
+
+// ---------- weather card
+function showWeather(){
+  if(D.weather===false){$('wx').style.display='none';return;}
+  if(!WX){return;}
+  var w=WX.d,c=w.current,dl=w.daily,h=w.hourly,i,k,n=0,box=$('hours'),cell,cur,step=D.hourStep||3;
+  $('wxplace').textContent=(HERE&&HERE.name)||WX.name||P.name||'Weather';
+  $('wxt').textContent=Math.round(c.temperature_2m)+'°C';
+  $('wxd').textContent=cond(c.weather_code);
+  $('wxn').textContent='Feels '+Math.round(c.apparent_temperature)+'° · '+c.relative_humidity_2m+'% · '+
+    Math.round(c.wind_speed_10m)+' km/h · H '+Math.round(dl.temperature_2m_max[0])+'° L '+Math.round(dl.temperature_2m_min[0])+'°';
+  clear(box);box.style.display='-webkit-flex';box.style.display='flex';
+  cur=c.time.slice(0,13);
+  for(i=0;i<h.time.length;i++){if(h.time[i].slice(0,13)===cur){break;}}
+  for(k=i+step;k<h.time.length&&n<5;k+=step,n++){
+    cell=el('div','hr');cell.appendChild(el('i','',h.time[k].slice(11,16)));
+    cell.appendChild(document.createTextNode(Math.round(h.temperature_2m[k])+'°'));
+    box.appendChild(cell);
+  }
+  status((now()-WX.ts>3*3600000?'Weather is old · ':'')+'Weather '+hm(new Date(WX.ts)),'wxat');
+  tiles();
+}
+
+// ---------- small tiles: air quality, sunrise, sunset, phone battery, then your own from data.js
+function aqiWord(a){return a<=50?'Good':a<=100?'Moderate':a<=150?'Poor':a<=200?'Unhealthy':a<=300?'Very unhealthy':'Hazardous';}
+function tile(box,label,value,note){var t=el('div','tile');t.appendChild(el('div','tl',label));t.appendChild(el('div','tv',value));
+  if(note){t.appendChild(el('div','tn',note));}box.appendChild(t);}
+function tiles(){
+  var box=$('tiles'),a=D.monitors||[],i,c,dl;
+  clear(box);
+  if(AQ&&AQ.d.current&&AQ.d.current.us_aqi!==null){c=AQ.d.current;tile(box,'AQI',String(Math.round(c.us_aqi)),aqiWord(c.us_aqi));}
+  if(WX){dl=WX.d.daily;tile(box,'Sunrise',dl.sunrise[0].slice(11,16),'');tile(box,'Sunset',dl.sunset[0].slice(11,16),'');}
+  if(BATT){tile(box,'Phone',Math.round(BATT.level*100)+'%',(BATT.temp?Math.round(BATT.temp)+'°C':'')+(BATT.charging?'':' · unplugged'));}
+  for(i=0;i<a.length;i++){tile(box,String(a[i].label),String(a[i].value),a[i].note?String(a[i].note):'');}
+  box.style.display=box.firstChild?'':'none';
+}
+function battery(){
+  if(APP&&Android.battery){
+    var poll=function(){try{BATT=JSON.parse(Android.battery());}catch(e){BATT=null;}tiles();};
+    poll();setInterval(poll,60000);return;
+  }
+  function use(b){BATT=b;tiles();if(b.addEventListener){b.addEventListener('levelchange',tiles);b.addEventListener('chargingchange',tiles);}}
+  try{if(navigator.getBattery){navigator.getBattery().then(use);}else{var b=navigator.battery||navigator.webkitBattery;if(b){use(b);}}}catch(e){}
+}
+
+// ---------- photos: change by themselves, or tap for the next one; swipe for the photo-only view
+var PH=(window.PHOTOS&&PHOTOS.length)?PHOTOS:[D.image||'photo.jpg'],pi=(lsGet('dash_pi')||0)%PH.length,lastPhoto=0,VIEW='dash';
+function showPhoto(){
+  var src=PH[pi],im=new Image();
+  im.onload=function(){
+    $('frame').style.backgroundImage='url('+src+')';$('ph').style.display='none';
+    $('pv').style.backgroundImage='url('+src+')';
+  };
+  im.src=src;lastPhoto=now();lsSet('dash_pi',pi);
+}
+function nextPhoto(step){pi=(pi+(step||1)+PH.length)%PH.length;showPhoto();}
+function photoLoop(){
+  var every=(VIEW==='photo'?(D.slideSeconds||30)*1000:(D.photoMinutes||10)*60000);
+  if(PH.length>1&&now()-lastPhoto>=every){nextPhoto(1);}
+}
+var NIGHT=false,BW=lsGet('dash_bw');if(BW===null){BW=D.grayscale!==false;}
+function cls(){document.body.className=(NIGHT?'night ':'')+(VIEW==='photo'?'photo ':'')+(BW?'bw':'');
+  $('cb1').textContent=$('cb2').textContent=BW?'Colour':'B&W';}
+function setView(v){VIEW=v;lsSet('dash_view',v);cls();}
+function toggleColour(e){e.stopPropagation();if(!tapped()){return;}BW=!BW;lsSet('dash_bw',BW);cls();}
+
+// ---------- touch: swipe sideways switches view; a tap on a photo shows the next one
+var tx=0,ty=0,swiped=0;
+document.addEventListener('touchstart',function(e){var t=e.touches[0];tx=t.clientX;ty=t.clientY;},false);
+document.addEventListener('touchmove',function(e){e.preventDefault();},false);
+document.addEventListener('touchend',function(e){
+  var t=e.changedTouches[0],dx=t.clientX-tx,dy=t.clientY-ty;
+  if(Math.abs(dx)>60&&Math.abs(dx)>1.5*Math.abs(dy)){swiped=now();setView(VIEW==='photo'?'dash':'photo');}
+},false);
+function tapped(){return now()-swiped>500;}
+$('frame').onclick=function(){if(tapped()){nextPhoto(1);}};
+$('cb1').onclick=toggleColour;$('cb2').onclick=toggleColour;
+$('pv').onclick=function(e){if(!tapped()){return;}nextPhoto(e.clientX<window.innerWidth/3?-1:1);};
+
+// ---------- clock and night mode
+function tick(){
+  var d=new Date(),h=d.getHours(),s,f=D.nightFrom,t=D.nightTo,n=false;
+  if(D.clock24===false){s=(h%12||12)+':'+p(d.getMinutes())+(h<12?' AM':' PM');}else{s=p(h)+':'+p(d.getMinutes());}
+  $('time').textContent=s;
+  $('date').textContent=DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();
+  if(typeof f==='number'&&typeof t==='number'){n=f>t?(h>=f||h<t):(h>=f&&h<t);}
+  if(n!==NIGHT||!document.body.className){NIGHT=n;cls();}
+  photoLoop();weatherLoop();
+}
+
+// ---------- to-do list, kept on the phone. Items added on the laptop (todo.txt) are merged in once.
+var TD=lsGet('dash_todo')||{items:[],gone:[]};
+function has(a,t){for(var i=0;i<a.length;i++){if((a[i].t||a[i])===t){return true;}}return false;}
+function saveTodo(){lsSet('dash_todo',TD);drawTodo();}
+function drawTodo(){
+  var ul=$('todo'),i;
+  clear(ul);
+  for(i=0;i<TD.items.length;i++){ul.appendChild(row(TD.items[i]));}
+  $('empty').textContent=TD.items.length?'':'Nothing to do. Tap + add.';
+}
+function row(it){
+  var li=el('li',it.done?'done':''),b=el('span','box',it.done?'✓':''),x=el('span','del','✕');
+  li.appendChild(b);li.appendChild(el('span','tx',String(it.t)));li.appendChild(x);
+  x.onclick=function(e){e.stopPropagation();if(!tapped()){return;}
+    if(confirm('Delete "'+it.t+'"?')){TD.items.splice(TD.items.indexOf(it),1);if(!has(TD.gone,it.t)){TD.gone.push(it.t);}saveTodo();}};
+  li.onclick=function(){if(!tapped()){return;}it.done=!it.done;saveTodo();};
+  return li;
+}
+function todo(){
+  var a=window.TODO||[],i;
+  if(D.todoTitle){$('tht').textContent=D.todoTitle;}
+  for(i=0;i<a.length;i++){if(!has(TD.items,a[i].t)&&!has(TD.gone,a[i].t)){TD.items.push({t:a[i].t,done:!!a[i].done});}}
+  saveTodo();
+  $('add').onclick=function(){if(!tapped()){return;}
+    var t=prompt('New to-do','');
+    if(t&&(t=t.replace(/^\s+|\s+$/g,''))){TD.items.push({t:t,done:false});
+      for(var j=0;j<TD.gone.length;j++){if(TD.gone[j]===t){TD.gone.splice(j,1);break;}}saveTodo();}};
+}
+
+// ---------- start
+WX=lsGet('dash_wx');AQ=lsGet('dash_aq');
+if(lsGet('dash_view')==='photo'){VIEW='photo';}
+todo();showPhoto();battery();tiles();showWeather();tick();setInterval(tick,5000);
+setTimeout(function(){location.reload();},6*3600000); // fresh start every 6 hours
+</script></body></html>
