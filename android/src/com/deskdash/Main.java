@@ -3,6 +3,7 @@ package com.deskdash;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.app.PendingIntent;
 import android.content.*;
 import android.location.*;
@@ -12,9 +13,12 @@ import android.os.*;
 import android.util.Log;
 import android.view.*;
 import android.webkit.*;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import java.io.*;
 import java.net.URL;
+import java.util.Calendar;
+import java.util.Locale;
 import org.json.JSONObject;
 
 /** Full-screen dashboard: shows /sdcard/dash/index.html and gives the page a few native helpers. */
@@ -121,30 +125,56 @@ public class Main extends Activity implements LocationListener {
     locating = on;
     Log.i(TAG, "location lookups " + (on ? "on" : "off"));
     if (on) {
-      try {
-        for (String p : lm.getProviders(true)) {
-          consider(lm.getLastKnownLocation(p));
-          if (!LocationManager.PASSIVE_PROVIDER.equals(p)) lm.requestLocationUpdates(p, 15 * 60000L, 200f, this, ui.getLooper());
-        }
-      } catch (Exception e) { locErr = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+      startProviders();
       ui.post(wifiLoop);
     } else {
       ui.removeCallbacks(wifiLoop);
       ui.removeCallbacks(wifiLookup);
-      try { lm.removeUpdates(this); } catch (Exception e) { }
+      try { lm.removeUpdates(this); lm.removeUpdates(once); } catch (Exception e) { }
       best = null;
     }
   }
 
+  /** Listens to every provider, not just the enabled ones, so switching location on later is picked up. */
+  void startProviders() {
+    try { lm.removeUpdates(this); lm.removeUpdates(once); } catch (Exception e) { }
+    locErr = "";
+    for (String p : lm.getAllProviders()) {
+      if (LocationManager.PASSIVE_PROVIDER.equals(p)) continue;
+      try { lm.requestLocationUpdates(p, 15 * 60000L, 200f, this, ui.getLooper()); }
+      catch (Exception e) { locErr = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+    }
+    try { for (String p : lm.getProviders(true)) consider(lm.getLastKnownLocation(p)); }
+    catch (Exception e) { locErr = e.getClass().getSimpleName() + ": " + e.getMessage(); }
+    askOnce();
+  }
+
+  /** Slow repeating updates can stay silent for a long time, so also ask for one position right now. */
+  void askOnce() {
+    for (String p : lm.getAllProviders()) {
+      if (LocationManager.PASSIVE_PROVIDER.equals(p)) continue;
+      try { lm.requestSingleUpdate(p, once, ui.getLooper()); Log.i(TAG, "asked " + p + " for a position"); }
+      catch (Exception e) { Log.i(TAG, p + " refused: " + e.getMessage()); }
+    }
+  }
+
+  /** Separate from the repeating listener: a one-shot request on the same listener would replace it. */
+  final LocationListener once = new LocationListener() {
+    public void onLocationChanged(Location l) { consider(l); }
+    public void onStatusChanged(String p, int s, Bundle e) { Log.i(TAG, p + " status " + s); }
+    public void onProviderEnabled(String p) { Log.i(TAG, p + " switched on"); }
+    public void onProviderDisabled(String p) { Log.i(TAG, p + " switched off"); }
+  };
+
   /** Every 15 minutes: Wi-Fi scan, then ask beaconDB 8 seconds later. Skipped while GPS has a recent fix. */
   Runnable wifiLoop = new Runnable() { public void run() {
     if (gpsIsCurrent()) wl.status = "not needed, GPS is current";
-    else { wl.scan(Main.this); ui.postDelayed(wifiLookup, 8000); }
+    else { askOnce(); wl.scan(Main.this); ui.postDelayed(wifiLookup, 8000); }
     ui.postDelayed(this, 15 * 60000L);
   }};
 
   Runnable wifiLookup = new Runnable() { public void run() {
-    new Thread(new Runnable() { public void run() { consider(wl.lookup(Main.this)); } }).start();
+    new Thread(new Runnable() { public void run() { consider(wl.lookup(Main.this)); Log.i(TAG, "Wi-Fi lookup: " + wl.status); } }).start();
   }};
 
   synchronized boolean gpsIsCurrent() {
@@ -154,6 +184,7 @@ public class Main extends Activity implements LocationListener {
 
   synchronized void consider(Location l) {
     if (l == null || !locating) return;
+    Log.i(TAG, "location from " + l.getProvider() + ", accuracy " + (int) l.getAccuracy() + " m, age " + (System.currentTimeMillis() - l.getTime()) / 60000 + " min");
     if (best == null) { best = l; return; }
     long newer = l.getTime() - best.getTime();
     if (newer > 30 * 60000L || (newer > -30 * 60000L && l.getAccuracy() <= best.getAccuracy())) best = l;
@@ -198,6 +229,22 @@ public class Main extends Activity implements LocationListener {
   /** Methods the page can call as Android.xxx(). */
   class Bridge {
     @JavascriptInterface public void locate(boolean on) { setLocating(on); }
+
+    /** Ask for a position now: listens again, scans Wi-Fi, looks it up, then calls back window[cb](id, status). */
+    @JavascriptInterface public void refreshLocation(final String cb, final int id) {
+      ui.post(new Runnable() { public void run() {
+        if (!locating) { callback(cb, id, null); return; }
+        startProviders();
+        wl.scan(Main.this);
+        ui.postDelayed(new Runnable() { public void run() {
+          new Thread(new Runnable() { public void run() {
+            consider(wl.lookup(Main.this));
+            Log.i(TAG, "Wi-Fi lookup: " + wl.status);
+            callback(cb, id, wl.status);
+          }}).start();
+        }}, 8000);
+      }});
+    }
 
     /** Best position the phone knows, as JSON. Also lists which providers are switched on. */
     @JavascriptInterface public String location() {
@@ -278,6 +325,25 @@ public class Main extends Activity implements LocationListener {
         } finally { r.close(); }
       } catch (IOException e) { return ""; }
       return sb.toString();
+    }
+
+    /** Native date picker. Calls back window[cb](id, "yyyy-mm-dd"), or (id, null) if cancelled. */
+    @JavascriptInterface public void pickDate(final String cb, final int id) {
+      ui.post(new Runnable() { public void run() {
+        Calendar c = Calendar.getInstance();
+        // No listener passed in: on Android 4.4 it also fires on Cancel.
+        final DatePickerDialog d = new DatePickerDialog(Main.this, AlertDialog.THEME_HOLO_LIGHT, null,
+            c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+        d.setButton(DialogInterface.BUTTON_POSITIVE, getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface x, int w) {
+            DatePicker p = d.getDatePicker();
+            callback(cb, id, String.format(Locale.US, "%04d-%02d-%02d", p.getYear(), p.getMonth() + 1, p.getDayOfMonth()));
+          }});
+        d.setButton(DialogInterface.BUTTON_NEGATIVE, getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface x, int w) { callback(cb, id, null); }});
+        d.setOnCancelListener(new DialogInterface.OnCancelListener() { public void onCancel(DialogInterface x) { callback(cb, id, null); }});
+        d.show();
+      }});
     }
 
     /** Timer finished. */

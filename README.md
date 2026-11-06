@@ -1,17 +1,23 @@
 # Desk dashboard
 
-Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with six pages:
+Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages:
 
 - **Home**: clock, weather, the next hours and a whole photo, with air quality and sunrise/sunset below. Scroll down for your to-do list
 - **Photos**: full-screen slideshow
 - **This week**: today in detail, then six day cards
 - **Weather**: as many cities as you like. Tap **+ Add city** to search; what you type goes to Open-Meteo's search
 - **Calendar**: month view with Indian holidays and festivals, the next ones listed, and optional events from `web/data.js`
-- **Focus**: timer that beeps when it ends
+- **Countdowns**: days left until your trips, birthdays and deadlines. Add them on the phone; yearly ones repeat
+- **Focus**: timer that beeps when it ends. Use the presets, or drag the slider for 1 minute to 2 hours
 
 A **Habits** page is also built in. It's off by default; set `habits: true` in `web/data.js` to bring it back (saved habits are kept).
 
 Weather refreshes every 15 minutes, and retries every 5 if the connection fails.
+
+## Style
+
+The default style, **Photo colours**, takes its colours from the current photo, so the whole dashboard changes with each picture. Modern dark, E-ink, and Light with dark at night stay available under the gear icon.
+Colours are worked out on the laptop by `sync.py photos`. The font is Hind by Indian Type Foundry (SIL Open Font License, in `web/fonts/`).
 
 ## Holidays
 
@@ -77,7 +83,8 @@ python3 tools/test_sync.py                  # run the tests
 - **Swipe sideways**: change page. The dots and gear show when you touch the screen and fade after a few seconds
 - **Drag up or down**: scroll the page. On Home, this reaches the tiles and to-do list
 - **Tap a photo**: next photo (on the Photos page, tap the left side to go back)
-- **Gear icon**: how often the photo changes, the style (Modern dark, E-ink, or Light with dark at night) and photo colour
+- **Gear icon**: how often the photo changes (a slider from 5 seconds to 1 hour), the style (Photo colours, Pastel, Modern dark, E-ink, or Light with dark at night), colour or black-and-white photos, when the background goes dark (never, at night, always), and the location (automatic, or a place you choose)
+- **Refresh icon on Home**: looks for the phone's position and updates the weather. It can be used once a minute
 - **+ Add**: add a to-do item or habit. **✕**: delete one. **Tap** an item to tick it
 - **Turn the phone**: the layout follows, in portrait or landscape (the phone's rotation lock is respected)
 - **Tap the status line**: read a long message in full

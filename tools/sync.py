@@ -17,7 +17,7 @@
 Paths: the page lives in web/, the app in dist/DeskDash.apk (or android/build/ after android/build.sh).
 Every adb call is timed and written to sync.log in the repo folder (not committed).
 """
-import json, os, re, shutil, socket, subprocess, sys, time
+import colorsys, json, os, re, shutil, socket, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repo folder
 WEB = os.path.join(ROOT, "web")                                       # everything sent to the phone
@@ -217,6 +217,16 @@ def make_tasks(pending=None):
     log("tasks.js rebuilt (%d items, %d changes for the phone)" % (len(items), len(pending)))
 
 
+def check_page():
+    """A script error leaves the phone showing a broken page, so look for one right after sending."""
+    time.sleep(4)
+    errors = [l for l in run("logcat", "-d", "-s", "DeskDash:I", timeout=15).splitlines() if "Uncaught" in l or "JS error" in l]
+    if errors:
+        log("ERROR: the page has a script error, so the dashboard is broken on the phone:\n" + "\n".join(errors[:5]))
+    else:
+        log("page loaded with no script errors")
+
+
 def push():
     step("sending files")
     connect()
@@ -232,10 +242,18 @@ def push():
         if os.path.exists(path):
             log("pushing %s (%d KB)" % (name, os.path.getsize(path) // 1024))
             run("push", path, DEST + "/" + name, timeout=90)
+    run("shell", "mkdir", "-p", DEST + "/fonts")
+    sizes = phone_sizes(DEST + "/fonts")
+    for name in sorted(os.listdir(os.path.join(WEB, "fonts"))):
+        path = os.path.join(WEB, "fonts", name)
+        if name.endswith(".ttf") and sizes.get(name) != str(os.path.getsize(path)):
+            run("push", path, DEST + "/fonts/" + name, timeout=90)
     log("files now on phone:\n" + run("shell", "ls", "-l", DEST, timeout=10))
     if "com.deskdash" in run("shell", "pm", "list", "packages", "com.deskdash", timeout=20):
+        run("logcat", "-c", timeout=10)
         run("shell", "am", "force-stop", "com.deskdash", timeout=10)
         run("shell", "am", "start", "-n", "com.deskdash/.Main", timeout=20)
+        check_page()
         log("push finished (opened in the Desk app)")
         return
     # closing the browser first makes it load the new files instead of a cached copy
@@ -387,6 +405,43 @@ def prepare(src, dst):
         log("WARNING: %s is only %sx%s pixels and will look blurry. Use a larger copy if you have one." % (os.path.basename(src), w, h))
 
 
+def pick_hue(hist):
+    """Choose the photo's colour from [(pixel count, r, g, b)]: common and colourful wins. Returns (hue, saturation %)."""
+    total = sum(h[0] for h in hist) or 1
+    best = (0, 200, 0)
+    for n, r, g, b in hist:
+        hue, light, sat = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+        if n / total < 0.01 or not 0.08 < light < 0.95:   # specks, near-black and near-white say little
+            continue
+        score = (n / total) ** 0.5 * (sat + 0.02) ** 1.5
+        if score > best[0]:
+            best = (score, round(hue * 360), round(sat * 100))
+    return best[1], best[2]
+
+
+def photo_info(path):
+    """What the page needs to colour itself around a photo: its shape and main colour."""
+    out = subprocess.run(["convert", path, "-format", "%w %h\n", "-write", "info:-", "-resize", "100x100!", "-colors", "8", "-depth", "8",
+                          "-format", "%c", "histogram:info:-"], capture_output=True, text=True, check=True).stdout
+    lines = out.splitlines()
+    w, h = lines[0].split()
+    hist = [(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)))
+            for m in (re.search(r"(\d+): \((\d+),(\d+),(\d+)", l) for l in lines[1:]) if m]
+    hue, sat = pick_hue(hist)
+    return {"w": int(w), "h": int(h), "hue": hue, "sat": sat}
+
+
+def write_photos_js(names, info):
+    with open(os.path.join(WEB, "photos.js"), "w") as f:
+        f.write("var PHOTOS = " + json.dumps(names) + ";\nvar PHOTO_INFO = " + json.dumps(info) + ";\n")
+
+
+def phone_sizes(folder):
+    """File sizes on the phone, so unchanged files aren't sent again."""
+    listing = run("shell", "ls", "-l", folder, timeout=20)
+    return {p[-1]: p[-4] for p in (l.split() for l in listing.splitlines()) if len(p) >= 6 and "." in p[-1]}
+
+
 def image(src):
     dst = os.path.join(WEB, "photo.jpg")
     if shutil.which("convert"):
@@ -395,7 +450,7 @@ def image(src):
         print("ImageMagick not found (sudo apt install imagemagick): copying the file as it is.")
         shutil.copy(src, dst)
     # a photo set would take priority over this picture; take it out of rotation (files stay, re-run 'photos' to restore)
-    open(os.path.join(WEB, "photos.js"), "w").write("var PHOTOS = [];\n")
+    write_photos_js([], {"photo.jpg": photo_info(dst)} if shutil.which("convert") else {})
     push()
 
 
@@ -438,16 +493,14 @@ def photos(folder=None):
         if n not in wanted:
             os.remove(os.path.join(out, n))
     run("shell", "mkdir", "-p", DEST + "/photos")
-    listing = run("shell", "ls", "-l", DEST + "/photos", timeout=20)
-    sizes = {p[-1]: p[-4] for p in (l.split() for l in listing.splitlines()) if len(p) >= 6 and p[-1].endswith(".jpg")}
+    sizes = phone_sizes(DEST + "/photos")
     for n in sizes:
         if n not in wanted:
             run("shell", "rm", DEST + "/photos/" + n)
     for n in sorted(wanted):
         if sizes.get(n) != str(os.path.getsize(os.path.join(out, n))):
             run("push", os.path.join(out, n), DEST + "/photos/" + n, timeout=90)
-    with open(os.path.join(WEB, "photos.js"), "w") as f:
-        f.write("var PHOTOS = " + json.dumps(["photos/" + n for n in names]) + ";\n")
+    write_photos_js(["photos/" + n for n in names], {"photos/" + n: photo_info(os.path.join(out, n)) for n in names})
     log("%d photos on the phone (%d new or changed)" % (len(names), changed))
     push()
 

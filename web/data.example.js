@@ -8,7 +8,7 @@ var DASH = {
   image: "photo.jpg",            // used when no photos were sent with: python3 tools/sync.py photos <folder>
   photoMinutes: 10,              // starting photo interval; after that, change it with the gear icon on the phone
   grayscale: true,               // start photos in black-and-white; change it with the gear icon on the phone
-  theme: "dark",                 // starting style: "dark", "eink" or "auto" (light, dark at night); gear icon on the phone
+  theme: "photo",                // starting style: "photo" (colours from each photo), "dark", "eink" or "auto" (light, dark at night)
   weekStart: 0,                  // calendar: 0 starts weeks on Sunday, 1 on Monday
   cities: [],   // starting list for the Weather page; after that, add and remove them on the phone
   habits: false,                 // true shows the Habits page again (saved habits are kept)

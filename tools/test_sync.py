@@ -40,6 +40,19 @@ class Diff(unittest.TestCase):
         self.assertEqual(sync.apply_ops([item("a")], [{"op": "rm", "t": "gone", "id": 1}, {"op": "done", "t": "gone", "id": 2}]), [item("a")])
 
 
+class PickHue(unittest.TestCase):
+    def test_colourful_beats_grey(self):
+        hue, sat = sync.pick_hue([(6000, 120, 120, 120), (3000, 200, 30, 180), (1000, 240, 240, 240)])
+        self.assertTrue(290 < hue < 320 and sat > 50)
+
+    def test_specks_and_extremes_are_ignored(self):
+        hue, _ = sync.pick_hue([(5, 255, 0, 0), (5000, 30, 80, 160), (5000, 2, 2, 2)])
+        self.assertTrue(200 < hue < 230)
+
+    def test_empty_falls_back(self):
+        self.assertEqual(sync.pick_hue([]), (200, 0))
+
+
 class PhotoName(unittest.TestCase):
     def test_plain_and_stable(self):
         self.assertEqual(sync.photo_name("My trip (1).JPEG"), "My_trip__1__JPEG.jpg")

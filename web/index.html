@@ -6,10 +6,12 @@
 /* Six pages side by side in #pager; each scrolls by itself. Sizes are in vmin so they follow the screen.
    Android 4.4: no CSS variables, grid or object-fit, so themes are body classes and flex needs -webkit- prefixes.
    Never put a CSS filter on a sharp photo here: this WebView draws filtered content at half resolution. */
+@font-face{font-family:Hind;font-weight:400;src:url(fonts/Hind-Regular.ttf)}
+@font-face{font-family:Hind;font-weight:500;src:url(fonts/Hind-Medium.ttf)}
 *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:rgba(0,0,0,0)}
 html,body{height:100%;margin:0;overflow:hidden;-webkit-text-size-adjust:none;font-family:Roboto,"Droid Sans",Helvetica,Arial,sans-serif;background:#0e0f11;color:#eceae4}
 svg{display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.row,#hero,#htop,#strip,.tile,#pager,#tiles,#hours,.chips,.todo li,.hrow,#calwrap,#focwrap,.head{display:-webkit-flex;display:flex}
+.row,#hero,#htop,#strip,#hfoot,.tile,#pager,#tiles,#hours,.chips,.todo li,.hrow,#calwrap,#focwrap,.head{display:-webkit-flex;display:flex}
 .grow{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 .none{-webkit-flex:0 0 auto;flex:0 0 auto}
 
@@ -17,7 +19,7 @@ svg{display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:
 #pager{position:absolute;top:0;left:0;bottom:0}
 #pager.ease{-webkit-transition:-webkit-transform .28s ease-out;transition:transform .28s ease-out}
 .page{position:relative;-webkit-flex:0 0 auto;flex:0 0 auto;overflow:hidden}
-.pad{padding:4vmin 4vmin 11vmin}
+.pad{padding:4vmin 4vmin 9vmin}
 .mut{color:#9a9a94}
 .card{background:#191b1e;border-radius:3vmin;padding:3vmin 3.4vmin;margin-top:2.4vmin}
 .head{-webkit-align-items:center;align-items:center;margin-bottom:1.6vmin}
@@ -31,13 +33,16 @@ h2{margin:0;font-size:3.8vmin;font-weight:500}
 #hero{-webkit-flex-direction:column;flex-direction:column;padding:3vmin 3vmin 0}
 #htop{-webkit-flex:1 1 auto;flex:1 1 auto;min-height:0;-webkit-flex-direction:column;flex-direction:column}
 /* one slim row that always fits: no boxes, nothing cut off */
-#strip{-webkit-flex:0 0 auto;flex:0 0 auto;height:10vmin;-webkit-align-items:center;align-items:center;padding:0 1vmin;font-size:3.7vmin}
-#tiles{-webkit-align-items:center;align-items:center;overflow:hidden;white-space:nowrap}
-.tile{-webkit-align-items:center;align-items:center;margin-right:5vmin}
-.tile svg{width:4.8vmin;height:4.8vmin;margin-right:1.3vmin;color:#9a9a94}
+#strip{-webkit-flex:0 0 auto;flex:0 0 auto;-webkit-align-items:center;align-items:center;padding:1.4vmin 1vmin .6vmin;font-size:4vmin}
+#hfoot{-webkit-flex:0 0 auto;flex:0 0 auto;min-height:8vmin;-webkit-align-items:center;align-items:center;padding:0 1vmin}
+#tiles{-webkit-align-items:center;align-items:center;-webkit-flex-wrap:wrap;flex-wrap:wrap;white-space:nowrap}
+.tile{-webkit-align-items:center;align-items:center;margin:.6vmin 3.4vmin .6vmin 0}
+.tile svg.moon{fill:currentColor;stroke:none}
+.tile svg.moon circle{fill:none;stroke:currentColor;stroke-width:1.2}
+.tile svg{width:5vmin;height:5vmin;margin-right:1.2vmin;color:#9a9a94}
 .tile .tv{margin-right:1.6vmin}
-.tile .tn{font-size:3.1vmin;color:#9a9a94}
-#tolink{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:2vmin 0 2vmin 3vmin;white-space:nowrap}
+.tile .tn{font-size:3.4vmin;color:#9a9a94}
+#tolink{margin-left:auto;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:1vmin 0 1vmin 3vmin;font-size:3.8vmin;white-space:nowrap}
 #tolink svg{width:4.4vmin;height:4.4vmin;margin-left:.8vmin}
 #now{-webkit-flex:0 0 auto;flex:0 0 auto;padding:0 1vmin 2vmin}
 #hours.card{margin-top:2.4vmin;padding:2vmin 1vmin}
@@ -48,20 +53,26 @@ h2{margin:0;font-size:3.8vmin;font-weight:500}
 #wxi svg{width:12vmin;height:12vmin;margin-right:2vmin;stroke-width:1.3;color:#f2b95c}
 #wxt{font-size:13vmin;font-weight:200;line-height:1;letter-spacing:-.02em}
 #wxd{margin-left:3vmin;font-size:3.8vmin;line-height:1.35;min-width:0}
-#wxd b{display:block;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#wxd span{display:block;font-size:3.2vmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#upd{margin-top:1.6vmin;font-size:2.7vmin;color:#7c7c77;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wxd b{display:block;font-weight:400}
+#wxd span{display:block;font-size:3.2vmin;line-height:1.3}
+#refresh{width:8vmin;height:8vmin;margin-left:-1.6vmin;padding:1.8vmin;color:#9a9a94}
+#refresh svg{width:4.4vmin;height:4.4vmin}
+#refresh.wait{opacity:.35}
+#refresh.spin svg{-webkit-animation:spin 1s linear infinite;animation:spin 1s linear infinite}
+@-webkit-keyframes spin{to{-webkit-transform:rotate(360deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+#upd{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-size:2.9vmin;color:#7c7c77;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #upd.warn{color:#e08a5e}
 .photo{position:relative;overflow:hidden;background:#000}
 .photo div{position:absolute;top:0;left:0;right:0;bottom:0}
 .photo .pb{top:-8%;left:-8%;right:-8%;bottom:-8%;background:center/cover no-repeat;-webkit-filter:blur(14px) brightness(.62);filter:blur(14px) brightness(.62)}
 .photo .pf{background:center/contain no-repeat}
 .photo .pd{display:none;background:#000;opacity:.42}
-body.night .photo .pd{display:block}
+body.dimph .photo .pd{display:block}
 body.cssgray .photo .pf{-webkit-filter:grayscale(1);filter:grayscale(1)}
 body.cssgray .photo .pb,body.gray .photo .pb{-webkit-filter:grayscale(1) blur(14px) brightness(.62);filter:grayscale(1) blur(14px) brightness(.62)}
 #frame{-webkit-flex:1 1 auto;flex:1 1 auto;min-height:0;border-radius:3vmin;-webkit-mask-image:-webkit-radial-gradient(white,black)}
-#more{padding:1vmin 4vmin 11vmin}
+#more{padding:1vmin 4vmin 9vmin}
 #tcard{margin-top:0}
 #hours{-webkit-justify-content:space-between;justify-content:space-between}
 .hr{-webkit-flex:1 1 0;flex:1 1 0;min-width:0;text-align:center;font-size:3.7vmin}
@@ -136,7 +147,7 @@ body.cssgray .photo .pb,body.gray .photo .pb{-webkit-filter:grayscale(1) blur(14
 .cd.has:after{content:"";position:absolute;left:50%;bottom:.6vmin;width:1.2vmin;height:1.2vmin;margin-left:-.6vmin;border-radius:50%;background:#f2b95c}
 
 /* ---------- focus: everything centred, one main action */
-#p4{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
+#p4{padding-bottom:6vmin;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
 #focwrap{-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
 #ringbox{position:relative;width:78vmin;height:78vmin}
 #ring{width:100%;height:100%;-webkit-transform:rotate(-90deg);transform:rotate(-90deg);stroke-width:2.2}
@@ -154,8 +165,15 @@ body.cssgray .photo .pb,body.gray .photo .pb{-webkit-filter:grayscale(1) blur(14
 #fbtns{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;margin-top:3.6vmin}
 #fgo{display:-webkit-flex;display:flex;-webkit-flex:1 1 auto;flex:1 1 auto;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;height:13vmin;border-radius:7vmin;background:#f2b95c;color:#17140c;font-size:4.4vmin;font-weight:500}
 #fgo svg{width:5vmin;height:5vmin;margin-right:1.6vmin}
-#freset{-webkit-flex:0 0 auto;flex:0 0 auto;width:13vmin;height:13vmin;margin-left:2vmin;padding:4vmin;border-radius:50%;background:#25272b}
-#freset svg{width:100%;height:100%}
+#freset{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;-webkit-flex:0 0 auto;flex:0 0 auto;width:13vmin;height:13vmin;margin-left:2vmin;border-radius:50%;background:#25272b}
+#freset svg{width:5vmin;height:5vmin}
+#fslide{padding:3.4vmin 3vmin 0}
+#islide{padding:1vmin 3vmin 1.6vmin}
+#fslide.off{opacity:.35}
+.strack{position:relative;height:1.2vmin;margin:2.4vmin 0;border-radius:1vmin;background:#25272b}
+.sfill{height:1.2vmin;border-radius:1vmin;background:#f2b95c}
+.sthumb{position:absolute;top:50%;width:6vmin;height:6vmin;margin:-3vmin 0 0 -3vmin;border-radius:50%;background:#f2b95c}
+.sends{display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between;font-size:2.9vmin;color:#9a9a94}
 #fcount{min-height:4vmin;margin-top:2.6vmin;font-size:3.2vmin;color:#9a9a94}
 
 /* ---------- habits */
@@ -170,17 +188,26 @@ body.cssgray .photo .pb,body.gray .photo .pb{-webkit-filter:grayscale(1) blur(14
 /* ---------- navigation and settings */
 #nav{-webkit-transition:opacity .4s;transition:opacity .4s;pointer-events:none}
 /* width is explicit (six dots) so the pill can be centred exactly: inline centring lands off-centre on this WebView */
-#dots{position:absolute;left:50%;bottom:1.6vmin;height:4.7vmin;padding:1.5vmin 1.2vmin;border-radius:3vmin;background:rgba(14,15,17,.78);font-size:0;white-space:nowrap}
+#dots{position:absolute;left:50%;bottom:1.2vmin;height:4.7vmin;padding:1.5vmin 1.2vmin;border-radius:3vmin;background:rgba(14,15,17,.78);font-size:0;white-space:nowrap}
 #dots span{display:inline-block;width:1.7vmin;height:1.7vmin;margin:0 .8vmin;border-radius:50%;background:#777;vertical-align:middle}
 #dots span.on{background:#f2b95c}
-#gear{position:absolute;right:2vmin;bottom:.6vmin;width:9vmin;height:9vmin;padding:2vmin;border-radius:50%;background:rgba(25,27,30,.82);color:#c8c7c1;-webkit-transition:opacity .4s;transition:opacity .4s}
-body.home #dots{bottom:11.4vmin}body.home #gear{bottom:10.4vmin}
+#gear{position:absolute;bottom:.2vmin;width:7vmin;height:7vmin;padding:1.3vmin;border-radius:50%;background:rgba(25,27,30,.82);color:#c8c7c1;-webkit-transition:opacity .4s;transition:opacity .4s}
 body.idle #nav,body.idle #gear{opacity:0;pointer-events:none}
 #gear svg{width:100%;height:100%}
 #pick,#sheet{position:absolute;top:0;left:0;right:0;bottom:0;display:none;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;background:rgba(0,0,0,.55)}
 #pick.open,#sheet.open{display:-webkit-flex;display:flex}
+/* ---------- countdowns: the next date is the page; the rest stay small */
+#cdbig{padding:1vmin 0 2vmin}
+#cdnum{font-size:44vmin;line-height:.95}
+#cdname{font-size:6vmin;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cdwhen{font-size:3.6vmin;color:#9a9a94}
+.cdr{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-height:11vmin;border-top:1px solid #2a2c30;font-size:4vmin}
+.cdr b{width:17vmin;font-size:6vmin;font-weight:300}
+.cdr i{display:block;font-style:normal;font-size:3vmin;color:#9a9a94}
+
 #panel,#pickp{width:88%;max-width:130vmin;max-height:96%;padding:3.4vmin 4vmin;background:#191b1e;border-radius:4vmin}
 #pickp{overflow:hidden}
+#panel{overflow:hidden}
 #panel h2{margin:2.2vmin 0 .8vmin;font-weight:400;font-size:3.4vmin;color:#9a9a94}
 #panel .chips{margin:0 -.8vmin}
 
@@ -205,7 +232,9 @@ body.t-light .seg .chip{background:transparent}
 body.t-light .seg .chip.on{background:#c2410c}
 body.t-light .hr svg{color:#c2410c}
 
-body.t-light #freset{background:#ebeae4}
+body.t-light #freset,body.t-light .strack{background:#ebeae4}
+body.t-light .sfill,body.t-light .sthumb{background:#c2410c}
+body.t-light .sends,body.t-light #refresh{color:#6d6e6c}
 body.t-light #fstate,body.t-light .cd.wk{color:#6d6e6c}
 body.t-light #wxi svg,body.t-light .ev i,body.t-light .hd.now{color:#c2410c}
 body.t-light #dots{background:rgba(255,255,255,.88)}
@@ -239,6 +268,9 @@ body.t-eink .seg .chip.on{background:#000;color:#fff}
 
 body.t-eink #fgo{background:#000;color:#fff;border-radius:1vmin}
 body.t-eink #freset{background:#fff;border:1.5px solid #000;border-radius:1vmin}
+body.t-eink .strack{background:#fff;border:1px solid #000;border-radius:0}
+body.t-eink .sfill,body.t-eink .sthumb{background:#000}
+body.t-eink .sends,body.t-eink #refresh{color:#000}
 body.t-eink #fstate,body.t-eink .cd.wk{color:#000}
 body.t-eink #dots{background:#fff;border:1px solid #000}
 body.t-eink #wxi svg,body.t-eink .ev i,body.t-eink .hd.now{color:#000}
@@ -255,9 +287,13 @@ body.t-eink.night .card,body.t-eink.night #panel,body.t-eink.night .chip,body.t-
 body.t-eink.night .todo li,body.t-eink.night .ev,body.t-eink.night .hrow,body.t-eink.night .box,body.t-eink.night #frame{border-color:#b4b3ab}
 body.t-eink.night .btn,body.t-eink.night .chip.on,body.t-eink.night .fbtn.go,body.t-eink.night .cd.today span,body.t-eink.night .done .box,body.t-eink.night .hc.on,body.t-eink.night #dots span.on,body.t-eink.night .cd.has:after{background:#b4b3ab;border-color:#b4b3ab;color:#000}
 body.t-eink.night #ring .fg{stroke:#b4b3ab}
-body.t-eink.night .seg,body.t-eink.night #freset,body.t-eink.night #dots,
-body.t-eink.night .hr svg,body.t-eink.night #fstate,body.t-eink.night .cd.wk{color:#b4b3ab}
-body.t-eink.night .seg .chip.on,body.t-eink.night #fgo,body.t-eink.night #ring .bg{stroke:#333}
+body.t-eink.night .seg,body.t-eink.night #freset,body.t-eink.night #dots{background:#000;border-color:#b4b3ab;color:#b4b3ab}
+body.t-eink.night .hr svg,body.t-eink.night #fstate,body.t-eink.night .cd.wk,body.t-eink.night .sends,body.t-eink.night #refresh{color:#b4b3ab}
+body.t-eink.night .seg .chip.on{background:#b4b3ab;color:#000}
+body.t-eink.night #ring .bg{stroke:#333}
+body.t-eink.night .strack{background:#000;border-color:#b4b3ab}
+body.t-eink.night .sfill,body.t-eink.night .sthumb{background:#b4b3ab}
+body.t-eink.night #sheet{background:rgba(0,0,0,.7)}
 body.t-eink.night .tile svg,body.t-eink.night .tile .tn,body.t-eink.night .cr,body.t-eink.night .ci,body.t-eink.night .pr span,body.t-eink.night #calhead,body.t-eink.night .ev span,body.t-eink.night .ft span,body.t-eink.night .fsub2,body.t-eink.night .fc svg,body.t-eink.night .cm svg,body.t-eink.night .ev.soon span,body.t-eink.night .cd.hol span{color:#b4b3ab}
 body.t-eink.night .pr{border-color:#b4b3ab}
 body.t-eink.night #pickp{background:#000;border-color:#b4b3ab}
@@ -269,15 +305,45 @@ body.t-eink.night #dots span{background:#000;border-color:#b4b3ab}
  #htop{-webkit-flex-direction:row;flex-direction:row}
  #now{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;width:49%;padding:0 3vmin 0 1vmin}
  #time{font-size:27vmin}
- #upd{margin-top:auto}
  #calwrap{-webkit-flex-direction:row;flex-direction:row}
  #calside{width:62vmin;margin:0 0 0 4vmin}
  #focwrap{-webkit-flex-direction:row;flex-direction:row}
  #fctl{width:74vmin;margin:0 0 0 9vmin}
  .pad{padding-top:3vmin}
+ #cdwrap{display:-webkit-flex;display:flex}
+ #cdbig{width:50%;padding-right:4vmin}
+ #cdrest{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
  .city{width:49%}
+ #sgroups{display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap}
+ .sg{width:50%;padding-right:2vmin}
 }
-</style></head><body class="t-dark">
+
+/* ---------- photo colours: type sits straight on one field of colour taken from the current picture.
+   Everything that depends on the colour is written by paint() below; this is the part that doesn't change. */
+body.t-photo{font-family:Hind,Roboto,sans-serif;-webkit-transition:background-color 1.2s,color 1.2s;transition:background-color 1.2s,color 1.2s}
+body.t-photo #time,body.t-photo #wxt,body.t-photo #ftime,body.t-photo .ct,body.t-photo .fnow .ft,body.t-photo #cdnum,body.t-photo .cdr b{font-weight:400;letter-spacing:-.01em}
+body.t-photo h1{font-weight:500}
+body.t-photo h2,body.t-photo .btn,body.t-photo #fgo,body.t-photo .chip.on{font-weight:500}
+body.t-photo #time{line-height:.95;margin-top:1vmin;font-size:25vmin}
+body.t-photo #date{font-size:4.4vmin}
+body.t-photo #wxt{font-size:13vmin}
+body.t-photo #hero{padding:0}
+body.t-photo #now{padding:3vmin 4vmin 1vmin}
+body.t-photo #frame{-webkit-flex:0 0 auto;flex:0 0 auto;margin:3vmin 3vmin 0 0;border-radius:1.2vmin;border:0;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+body.t-photo #wxd span{white-space:normal;line-height:1.3}
+body.t-photo #strip{padding:1.4vmin 4vmin .6vmin}
+body.t-photo #hfoot{padding:0 4vmin}
+body.t-photo .tile{background:transparent;border:0;border-radius:0}
+body.t-photo .card{background:transparent;border:1px solid transparent;border-radius:1.6vmin;padding:2.4vmin 3vmin;margin-top:3vmin}
+body.t-photo #hours.card{margin-top:2.4vmin;padding:1.4vmin 1vmin}
+body.t-photo .fc{padding:1vmin}
+body.t-photo .fnow{padding:0 3vmin}
+body.t-photo .city{margin-bottom:4vmin}
+body.t-photo #more{padding-top:3vmin}
+body.t-photo #tcard{margin-top:0}
+@media (orientation:portrait){body.t-photo #frame{-webkit-order:-1;order:-1;margin:3vmin 3vmin 0}body.t-photo #now{padding-top:2vmin}body.t-photo #time{font-size:22vmin}}
+@media (orientation:landscape){body.t-photo #now{width:auto;-webkit-flex:1 1 0;flex:1 1 0;min-width:0}}
+</style><style id="paint"></style></head><body class="t-dark">
 <div id="view"><div id="pager">
  <div class="page" id="p0"><div id="hero">
    <div id="htop">
@@ -285,11 +351,11 @@ body.t-eink.night #dots span{background:#000;border-color:#b4b3ab}
      <div id="time">--:--</div><div id="date"></div>
      <div id="wxnow" class="row"><span id="wxi" class="none"></span><span id="wxt" class="none">--</span><div id="wxd" class="grow"><b id="wxc">Waiting for data</b><span id="wxplace" class="mut"></span><span id="wxinfo" class="mut"></span></div></div>
      <div id="hours" class="card"></div>
-     <div id="upd"></div>
     </div>
     <div id="frame" class="photo"><div class="pb"></div><div class="pf"></div><div class="pd"></div></div>
    </div>
-   <div id="strip"><div id="tiles" class="grow"></div><span id="tolink" class="none"></span></div>
+   <div id="strip"><div id="tiles" class="grow"></div></div>
+   <div id="hfoot"><span id="refresh" class="none"></span><div id="upd" class="grow"></div><span id="tolink" class="none"></span></div>
   </div>
   <div id="more">
    <div class="card" id="tcard"><div class="head"><h2 id="tht" class="none">To do</h2><span id="tcount" class="grow"></span><span id="add" class="btn">+ Add</span></div><ul class="todo" id="todo"></ul><div id="empty"></div></div>
@@ -298,13 +364,14 @@ body.t-eink.night #dots span{background:#000;border-color:#b4b3ab}
  <div class="page" id="p1"><div id="pv" class="photo"><div class="pb"></div><div class="pf"></div><div class="pd"></div><span id="pvclock"></span></div></div>
  <div class="page pad" id="p2"><div class="head"><h1 class="none" style="white-space:nowrap">This week</h1><span id="fplace" class="mut grow"></span></div><div id="flist"></div></div>
  <div class="page pad" id="pw"><div class="head"><h1 class="grow">Weather</h1><span id="cadd" class="btn">+ Add city</span></div><div id="clist"></div></div>
+ <div class="page pad" id="pc"><div class="head"><h1 class="grow">Countdowns</h1><span id="cdadd" class="btn">+ Add date</span></div><div id="cdwrap"><div id="cdbig"><div id="cdnum"></div><div id="cdname"></div><div id="cdwhen"></div></div><div id="cdrest"></div></div></div>
  <div class="page pad" id="p3"><div id="calwrap">
    <div class="grow" id="calmain"><div class="head"><span id="cprev" class="icobtn none"></span><h2 id="ctitle" class="grow"></h2><span id="cnext" class="icobtn none"></span></div><div id="cgrid"></div></div>
    <div id="calside" class="card none"><h2 id="calhead"></h2><div id="calev"></div></div>
  </div></div>
  <div class="page" id="p4"><div id="focwrap">
    <div id="ringbox" class="none"><svg id="ring" viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="54"></circle><circle class="fg" id="rfg" cx="60" cy="60" r="54" stroke-dasharray="339.3"></circle></svg><div id="ftime"></div><div id="fstate"></div></div>
-   <div id="fctl" class="none"><div class="chips seg" id="fmodes"></div><div id="fbtns"><span id="fgo"></span><span id="freset"></span></div><div id="fcount"></div></div>
+   <div id="fctl" class="none"><div class="chips seg" id="fmodes"></div><div id="fslide"><div id="ftrack" class="strack"><div id="ffill" class="sfill"></div><div id="fthumb" class="sthumb"></div></div><div class="sends"><span>1 min</span><span>2 hours</span></div></div><div id="fbtns"><span id="fgo"></span><span id="freset"></span></div><div id="fcount"></div></div>
  </div></div>
  <div class="page pad" id="p5"><div class="head"><h1 class="grow">Habits</h1><span id="hadd" class="btn">+ Add</span></div><div class="card" id="hlist" style="margin-top:0"></div></div>
 </div></div>
@@ -313,9 +380,13 @@ body.t-eink.night #dots span{background:#000;border-color:#b4b3ab}
 <div id="pick"><div id="pickp"><div class="head"><h1 class="grow">Choose a city</h1><span id="pclose" class="icobtn none"></span></div><div id="plist"></div></div></div>
 <div id="sheet"><div id="panel">
  <div class="head"><h1 class="grow">Settings</h1><span id="sclose" class="icobtn none"></span></div>
- <h2>Change photo every</h2><div class="chips" id="sint"></div>
- <h2>Style</h2><div class="chips" id="sthm"></div>
- <h2>Photo colour</h2><div class="chips" id="scol"></div>
+ <div id="sgroups">
+  <div class="sg"><h2 id="sinth"></h2><div id="islide"><div id="itrack" class="strack"><div id="ifill" class="sfill"></div><div id="ithumb" class="sthumb"></div></div><div class="sends"><span>5 sec</span><span>1 hour</span></div></div></div>
+  <div class="sg"><h2>Style</h2><div class="chips" id="sthm"></div></div>
+  <div class="sg"><h2>Photo colour</h2><div class="chips" id="scol"></div></div>
+  <div class="sg"><h2>Dark background</h2><div class="chips" id="sdark"></div></div>
+  <div class="sg"><h2>Location</h2><div class="chips" id="sloc"></div></div>
+ </div>
 </div></div>
 <noscript><p>JavaScript is off. Open this page in the Desk app or the Browser app.</p></noscript>
 <script src="data.js"></script><script src="holidays.js"></script><script src="tasks.js"></script><script src="photos.js"></script>
@@ -339,8 +410,8 @@ function ymd(d){return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
 function status(s,key){
   MSG[key||'err']=s;
   var a=[],k,warn=false;
-  for(k in MSG){if(MSG[k]){a.push(MSG[k]);if(k!=='wxat'){warn=true;}}}
-  $('upd').textContent=a.join(' · ');$('upd').className=warn?'warn':'';
+  for(k in MSG){if(MSG[k]&&!(k==='wxat'&&MSG.ref)){a.push(MSG[k]);if(k!=='wxat'&&k!=='ref'){warn=true;}}}
+  $('upd').textContent=a.join('. ');$('upd').className=warn?'warn':'';
 }
 $('upd').onclick=function(){if(tapped()&&$('upd').textContent){alert($('upd').textContent);}};
 function km(a,b,c,d){var r=Math.PI/180,x=(d-b)*r*Math.cos((a+c)/2*r),y=(c-a)*r;return 6371*Math.sqrt(x*x+y*y);}
@@ -371,7 +442,7 @@ var SHAPE={
   sunset:'M17 18a5 5 0 0 0-10 0M12 9V2M4.2 10.2l1.4 1.4M2 18h2M20 18h2M18.4 11.6l1.4-1.4M22 22H2M16 6l-4 3-4-3',
   air:'M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2M17.7 7.7A2.5 2.5 0 1 1 19.5 12H2',
   down:'M6 9l6 6 6-6',x:'M18 6L6 18M6 6l12 12',check:'M5 13l4 4L19 7',left:'M15 18l-6-6 6-6',right:'M9 18l6-6-6-6',
-  play:'M7 4l13 8-13 8z',pause:'M8 4v16M16 4v16',reset:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5'
+  play:'M7 4l13 8-13 8z',pause:'M8 4v16M16 4v16',reset:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',refresh:'M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5'
 };
 function icon(name){
   var ns='http://www.w3.org/2000/svg',s=document.createElementNS(ns,'svg'),a=document.createElementNS(ns,'path');
@@ -413,53 +484,86 @@ function getJSON(path,ok,fail){
 function q(o){var a=[],k;for(k in o){a.push(k+'='+encodeURIComponent(o[k]));}return a.join('&');}
 
 // ---------- where am I? The phone's own position (Desk app), else the place in data.js
-var locTries=0,STALE_FIX=3*24*60;  // minutes: older fixes are treated as "no fix"
+var STALE_FIX=24*60,NAMEASKED={},LOCLOG='',lastMoved=0;  // minutes: older fixes are treated as "no fix"
+function savedPlace(){return S.place?{lat:S.place.lat,lon:S.place.lon,name:S.place.n,src:'data.js'}:{lat:P.lat,lon:P.lon,name:P.name,src:'data.js'};}
+function autoLoc(){return APP&&P.auto!==false&&S.loc!=='fixed';}
+function locLog(m){if(m!==LOCLOG){LOCLOG=m;console.log(m);}}
 function where(){
-  var l=null,names=lsGet('dash_names')||{},key,why,bad='';
-  if(APP&&P.auto!==false){
-    if(!Android.location){bad='app too old, run: tools/sync.py app';}
-    else{try{l=JSON.parse(Android.location());}catch(e){bad=e.message;}}
-    if(!l&&!bad){bad='no answer from the app';}
-  }
+  var l=null,names=lsGet('dash_names')||{},key,why,bad='',h=savedPlace();
+  if(!autoLoc()){return h;}
+  if(!Android.location){bad='app too old, run: tools/sync.py app';}
+  else{try{l=JSON.parse(Android.location());}catch(e){bad=e.message;}}
+  if(!l&&!bad){bad='no answer from the app';}
+  // The weather still works without a position, so these messages stay out of the footer.
   if(l&&typeof l.lat==='number'&&l.age>STALE_FIX){
-    status('Location: last fix is '+Math.round(l.age/1440)+' days old, ignored. Using '+(P.name||'data.js'),'loc');
-    return {lat:P.lat,lon:P.lon,name:P.name,src:'data.js'};
+    locLog('Location: last fix is '+Math.round(l.age/60)+' hours old, ignored. Using '+(h.name||'saved place'));
+    return h;
   }
   if(!l||typeof l.lat!=='number'){
-    if(APP&&P.auto!==false){
-      why=!l?bad:l.error?l.error:(l.providers==='[]'||!l.providers)?'no location source allowed ('+(l.all||'?')+')':'no fix yet from '+l.providers;
-      status('Location: '+why+(l&&l.wifi?'; Wi-Fi lookup: '+l.wifi:'')+'. Using '+(P.name||'data.js'),'loc');}
-    return {lat:P.lat,lon:P.lon,name:P.name,src:'data.js'};
+    why=!l?bad:l.error?l.error:(l.providers==='[]'||!l.providers)?'no location source allowed ('+(l.all||'?')+')':'no fix yet from '+l.providers;
+    locLog('Location: '+why+(l&&l.wifi?'; Wi-Fi lookup: '+l.wifi:'')+'. Using '+(h.name||'saved place'));
+    return h;
   }
-  status('','loc');
-  if(P.lat&&km(l.lat,l.lon,P.lat,P.lon)<3){return {lat:l.lat,lon:l.lon,name:P.name,src:l.provider};}
+  if(h.lat&&km(l.lat,l.lon,h.lat,h.lon)<3){return {lat:l.lat,lon:l.lon,name:h.name,src:l.provider};}
   key=l.lat.toFixed(2)+','+l.lon.toFixed(2);
-  if(!names[key]&&Android.name){
+  if(!names[key]&&!NAMEASKED[key]&&Android.name){
+    NAMEASKED[key]=1;
     var id=++CBN;CB[id]=function(n){if(n){names[key]=n;lsSet('dash_names',names);if(HERE&&HERE.key===key){HERE.name=n;showWeather();}}};
     Android.name(l.lat,l.lon,'nativeDone',id);
   }
   return {lat:l.lat,lon:l.lon,name:names[key]||'Current location',src:l.provider,key:key};
 }
 var lastTry=0;
-function loadWeather(){
-  if(D.weather===false){return;}
+function loadWeather(done){
+  if(D.weather===false){if(done){done(false);}return;}
   lastTry=now();
   HERE=where();
-  if(!HERE.lat){status('Set place in data.js','wx');return;}
-  if(HERE.src==='data.js'&&APP&&P.auto!==false&&locTries<6){locTries++;setTimeout(function(){if(where().src!=='data.js'){loadWeather();}},2*60000);}
+  if(!HERE.lat){status('Choose a place in Settings','wx');if(done){done(false);}return;}
   var lat=HERE.lat.toFixed(3),lon=HERE.lon.toFixed(3);
   getJSON('api.open-meteo.com/v1/forecast?'+q({latitude:lat,longitude:lon,timezone:'auto',forecast_days:7,
       current:'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day',
-      hourly:'temperature_2m,weather_code',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'}),
-    function(j){WX={d:j,ts:now(),name:HERE.name};lsSet('dash_wx',WX);status('','wx');showWeather();},
-    function(){status('Weather: no connection, retrying in 5 min','wx');});
+      hourly:'temperature_2m,weather_code,precipitation_probability',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'}),
+    function(j){WX={d:j,ts:now(),name:HERE.name};lsSet('dash_wx',WX);status('','wx');showWeather();if(done){done(true);}},
+    function(){status('Weather: no connection, retrying in 5 min','wx');if(done){done(false);}});
   getJSON('air-quality-api.open-meteo.com/v1/air-quality?'+q({latitude:lat,longitude:lon,timezone:'auto',current:'us_aqi,pm2_5'}),
     function(j){AQ={d:j,ts:now()};lsSet('dash_aq',AQ);tiles();},function(){tiles();});
   loadCities();
 }
 function weatherLoop(){
-  if(now()-lastTry>=(MSG.wx?5:15)*60000){loadWeather();}
+  var w;
+  if(now()-lastTry>=(MSG.wx?5:15)*60000){loadWeather();return;}
+  // A position can arrive at any time, for example when the phone first sees GPS.
+  if(autoLoc()&&now()-lastMoved>=60000){
+    lastMoved=now();w=where();
+    if(HERE&&w.src!=='data.js'&&(HERE.src==='data.js'||km(w.lat,w.lon,HERE.lat,HERE.lon)>3)){loadWeather();}
+  }
 }
+
+// ---------- refresh button. The wait stops repeated taps from hammering the free location and weather services.
+var REFRESH_GAP=60000,refreshing=false,noteT=null;
+function refreshWait(){var left=(lsGet('dash_refresh')||0)+REFRESH_GAP-now();return left>REFRESH_GAP?0:Math.max(0,left);}
+function note(m,keep){
+  status(m,'ref');
+  if(noteT){clearTimeout(noteT);noteT=null;}
+  if(!keep){noteT=setTimeout(function(){status('','ref');},8000);}
+}
+function drawRefresh(){$('refresh').className='none'+(refreshing?' spin':refreshWait()>0?' wait':'');}
+function refreshNow(){
+  var w=refreshWait(),id,safety;
+  if(refreshing){return;}
+  if(w>0){note('Refresh in '+Math.ceil(w/1000)+' sec');return;}
+  function finish(ok){
+    if(!refreshing){return;}
+    clearTimeout(safety);refreshing=false;drawRefresh();
+    note(!ok?'No connection':autoLoc()&&HERE.src==='data.js'?'Location not found':'Updated');
+  }
+  function weather(){loadWeather(finish);}
+  lsSet('dash_refresh',now());refreshing=true;drawRefresh();note('Updating…',true);
+  safety=setTimeout(function(){finish(false);},50000);
+  if(autoLoc()&&Android.refreshLocation){id=++CBN;CB[id]=weather;Android.refreshLocation('nativeDone',id);}else{weather();}
+}
+$('refresh').appendChild(icon('refresh'));
+$('refresh').onclick=function(){if(tapped()){refreshNow();}};
 
 // ---------- weather
 function isDay(t,dl){  // t = "2026-11-06T18:00"; compares with that date's sunrise and sunset
@@ -472,10 +576,10 @@ function showWeather(){
   if(!WX){return;}
   var w=WX.d,c=w.current,dl=w.daily,h=w.hourly,i,k,n=0,box=$('hours'),cell,cur2,step=D.hourStep||3,day=c.is_day!==0;
   clear($('wxi'));$('wxi').appendChild(icon(wxShape(c.weather_code,day)));
-  $('wxplace').textContent=(HERE&&HERE.name)||WX.name||P.name||'';
+  $('wxplace').textContent=(HERE&&HERE.name)||WX.name||savedPlace().name||'';
   $('wxt').textContent=Math.round(c.temperature_2m)+'°';
   $('wxc').textContent=cond(c.weather_code);
-  $('wxinfo').textContent='Feels '+Math.round(c.apparent_temperature)+'° · '+c.relative_humidity_2m+'% · '+Math.round(c.wind_speed_10m)+' km/h';
+  $('wxinfo').textContent='Feels like '+Math.round(c.apparent_temperature)+'°, '+c.relative_humidity_2m+'% humid, wind '+Math.round(c.wind_speed_10m)+' kmph';
   clear(box);
   cur2=c.time.slice(0,13);
   for(i=0;i<h.time.length;i++){if(h.time[i].slice(0,13)===cur2){break;}}
@@ -485,7 +589,7 @@ function showWeather(){
     cell.appendChild(document.createTextNode(Math.round(h.temperature_2m[k])+'°'));
     box.appendChild(cell);
   }
-  status((now()-WX.ts>3*3600000?'Weather is old · ':'')+'Updated '+hm(new Date(WX.ts)),'wxat');
+  status((now()-WX.ts>3*3600000?'Weather is old, updated ':'Updated ')+hm(new Date(WX.ts)),'wxat');
   tiles();forecast();
 }
 function forecast(){
@@ -494,14 +598,14 @@ function forecast(){
   $('fplace').textContent=(HERE&&HERE.name)||(WX&&WX.name)||'';
   if(!dl||!dl.weather_code){box.appendChild(el('div','mut','Waiting for the forecast…'));return;}
   u=Math.min(window.innerWidth,window.innerHeight)/100;gap=2*u;land=window.innerWidth>window.innerHeight;
-  H=Math.round(window.innerHeight-box.getBoundingClientRect().top-3*u);W=box.clientWidth;box.style.height=H+'px';
+  H=Math.round(window.innerHeight-box.getBoundingClientRect().top-9*u);W=box.clientWidth;box.style.height=H+'px';
   function place(n,l,tp,w,h){n.style.left=Math.round(l)+'px';n.style.top=Math.round(tp)+'px';n.style.width=Math.round(w)+'px';n.style.height=Math.round(h)+'px';box.appendChild(n);}
   function rainOf(k){var r=dl.precipitation_probability_max?dl.precipitation_probability_max[k]:null;return typeof r==='number'?r:0;}
   e=el('div','card fc fnow');
   e.appendChild(el('div','fd','Today'));e.appendChild(icon(wxShape(dl.weather_code[0],true)));
   t=el('div','ft',Math.round(dl.temperature_2m_max[0])+'°');t.appendChild(el('span','',Math.round(dl.temperature_2m_min[0])+'°'));e.appendChild(t);
   e.appendChild(el('div','fsub',cond(dl.weather_code[0])));
-  e.appendChild(el('div','fsub2','Rain '+rainOf(0)+'% · Sunset '+dl.sunset[0].slice(11,16)));
+  e.appendChild(el('div','fsub2','Rain '+rainOf(0)+'%, sunset '+dl.sunset[0].slice(11,16)));
   if(land){x0=W*.34+gap;y0=0;place(e,0,0,W*.34,H);cw=(W-x0-2*gap)/3;ch=(H-gap)/2;}
   else{x0=0;y0=H*.36+gap;place(e,0,0,W,H*.36);cw=(W-2*gap)/3;ch=(H-y0-gap)/2;}
   for(i=1;i<Math.min(7,dl.time.length);i++){
@@ -553,15 +657,13 @@ function drawCities(){
   for(i=0;i<CT.list.length;i++){one(CT.list[i]);}
 }
 function openPick(o){sheetOpen=o;$('pick').className=o?'open':'';if(!o){wake();}}
-function pickCity(res){
+function pickCity(res,onPick){
   var box=$('plist'),i;
   clear(box);
   function one(r){
     var e=el('div','pr',r.name);e.appendChild(el('span','',[r.admin1,r.country].filter(Boolean).join(', ')));
     e.onclick=function(){
-      var c={n:r.name,r:[r.admin1,r.country].filter(Boolean).join(', '),lat:r.latitude,lon:r.longitude},dup=false,k;
-      for(k=0;k<CT.list.length;k++){if(ckey(CT.list[k])===ckey(c)){dup=true;}}
-      if(!dup){CT.list.push(c);saveCities();loadCities();}
+      onPick({n:r.name,r:[r.admin1,r.country].filter(Boolean).join(', '),lat:r.latitude,lon:r.longitude});
       openPick(false);
     };
     box.appendChild(e);
@@ -569,15 +671,22 @@ function pickCity(res){
   for(i=0;i<res.length&&i<5;i++){one(res[i]);}
   openPick(true);
 }
-$('cadd').onclick=function(){if(!tapped()){return;}
-  var t=prompt('City name','');
+function searchPlace(ask,onPick){
+  var t=prompt(ask,'');
   if(!t||!(t=t.replace(/^\s+|\s+$/g,''))){return;}
   getJSON('geocoding-api.open-meteo.com/v1/search?'+q({name:t,count:10,language:'en',format:'json'}),
     function(j){
       var r=(j.results||[]).filter(function(x){return /^PPL/.test(x.feature_code||'');});
-      if(r.length){pickCity(r);}else{alert('No city found for "'+t+'".');}
+      if(r.length){pickCity(r,onPick);}else{alert('No city found for "'+t+'".');}
     },
     function(){alert('Could not search. Check the connection and try again.');});
+}
+$('cadd').onclick=function(){if(!tapped()){return;}
+  searchPlace('City name',function(c){
+    var dup=false,k;
+    for(k=0;k<CT.list.length;k++){if(ckey(CT.list[k])===ckey(c)){dup=true;}}
+    if(!dup){CT.list.push(c);saveCities();loadCities();}
+  });
 };
 $('pclose').appendChild(icon('x'));
 $('pclose').onclick=function(){openPick(false);};
@@ -593,6 +702,34 @@ function tile(box,ic,value,note,dot){
   if(note){t.appendChild(el('span','tn','\u00A0\u00A0'+note));}
   box.appendChild(t);
 }
+function nextHoliday(box){
+  var h=window.HOLIDAYS||[],i,tdy=ymd(new Date()),when;
+  for(i=0;i<h.length;i++){if(h[i].d>=tdy){when=ago(h[i].d);tile(box,'',h[i].n+' '+when.toLowerCase());return;}}
+}
+function rainSoon(box){  // the first hour in the next six that is more likely wet than not
+  var h=WX&&WX.d.hourly,i,k,cur2,pr;
+  if(!h||!h.precipitation_probability){return;}
+  cur2=WX.d.current.time.slice(0,13);
+  for(i=0;i<h.time.length;i++){if(h.time[i].slice(0,13)===cur2){break;}}
+  for(k=i;k<i+6&&k<h.time.length;k++){
+    pr=h.precipitation_probability[k];
+    if(pr>=50){tile(box,'rain',k===i?'Raining soon':'Rain at '+h.time[k].slice(11,16));return;}
+  }
+  tile(box,'','No rain soon');
+}
+function moonFrac(){return (((new Date().getTime()/864e5+2440587.5-2451550.1)/29.530588853)%1+1)%1;}  // 0 new, 0.5 full
+function moonName(f){return f<.03||f>.97?'New moon':f<.47?(f>.22&&f<.28?'Half moon':'Waxing moon'):f<.53?'Full moon':(f>.72&&f<.78?'Half moon':'Waning moon');}
+function moonIcon(f){  // the lit part of the disc, drawn for tonight's phase
+  var ns='http://www.w3.org/2000/svg',s=document.createElementNS(ns,'svg'),a=document.createElementNS(ns,'path'),o=document.createElementNS(ns,'circle'),rx=(9*Math.abs(Math.cos(2*Math.PI*f))).toFixed(2),wax=f<.5,cres=f<.25||f>.75;
+  s.setAttribute('viewBox','0 0 24 24');s.setAttribute('class','moon');
+  o.setAttribute('cx',12);o.setAttribute('cy',12);o.setAttribute('r',9);s.appendChild(o);
+  a.setAttribute('d','M12 3A9 9 0 0 '+(wax?1:0)+' 12 21A'+rx+' 9 0 0 '+((wax?cres:!cres)?0:1)+' 12 3z');s.appendChild(a);
+  return s;
+}
+function moonTile(box){
+  var f=moonFrac(),t=el('span','tile');
+  t.appendChild(moonIcon(f));t.appendChild(el('span','tv',moonName(f)));box.appendChild(t);
+}
 function tiles(){
   var box=$('tiles'),a=D.monitors||[],i,c,dl,age;
   clear(box);
@@ -601,14 +738,30 @@ function tiles(){
     if(age<24*3600000){tile(box,S.theme==='eink'?'air':'','AQI '+Math.round(c.us_aqi),age>3*3600000?'old':aqiWord(c.us_aqi),aqiColour(c.us_aqi));}
   }
   if(WX){dl=WX.d.daily;tile(box,'sunrise',dl.sunrise[0].slice(11,16));tile(box,'sunset',dl.sunset[0].slice(11,16));}
+  nextHoliday(box);rainSoon(box);moonTile(box);
   for(i=0;i<a.length;i++){tile(box,'',String(a[i].label)+' '+String(a[i].value),a[i].note?String(a[i].note):'');}
+  sizeHome();
 }
 
 // ---------- settings
-var SECS=[[10,'10 sec'],[30,'30 sec'],[60,'1 min'],[300,'5 min'],[600,'10 min'],[1800,'30 min'],[3600,'1 hour']];
-var THEMES=[['dark','Modern dark'],['eink','E-ink'],['auto','Light, dark at night']];
-var S=loadState('settings','dash_set')||{};
-if(!S.theme){S.theme=D.theme||'dark';}
+// Slider stops: close together for short times, further apart for long ones.
+var SECS=[5,10,15,20,30,45,60,120,180,300,600,900,1200,1800,2700,3600],isliding=false;
+function secsName(v){return v<60?v+' sec':v<3600?(v/60)+' min':'1 hour';}
+function drawInterval(){
+  var i,best=0,pct;
+  for(i=0;i<SECS.length;i++){if(Math.abs(SECS[i]-S.photoSecs)<Math.abs(SECS[best]-S.photoSecs)){best=i;}}
+  pct=best/(SECS.length-1)*100+'%';
+  $('sinth').textContent='Change photo every '+secsName(SECS[best]);
+  $('ifill').style.width=$('ithumb').style.left=pct;
+}
+function iSlide(x){
+  var r=$('itrack').getBoundingClientRect(),i=Math.max(0,Math.min(SECS.length-1,Math.round((x-r.left)/r.width*(SECS.length-1))));
+  if(SECS[i]!==S.photoSecs){S.photoSecs=SECS[i];drawInterval();}
+}
+var THEMES=[['photo','Photo colours'],['pastel','Pastel'],['dark','Modern dark'],['eink','E-ink'],['auto','Light, dark at night']];
+var saveSettingsSoon=false,S=loadState('settings','dash_set')||{};
+if(!S.theme){S.theme=D.theme||'photo';}
+if(!S.v2){S.v2=1;S.theme='photo';saveSettingsSoon=true;}  // the redesign starts on the new style; the old ones stay in Settings
 if(!S.photoSecs){S.photoSecs=(D.photoMinutes||10)*60;}
 if(typeof S.bw!=='boolean'){var oldBW=lsGet('dash_bw');S.bw=oldBW===null?D.grayscale!==false:oldBW;}
 function saveSettings(){saveState('settings','dash_set',S);}
@@ -618,23 +771,84 @@ function chips(box,list,val,pick){
   for(i=0;i<list.length;i++){one(list[i]);}
 }
 function drawSettings(){
-  chips($('sint'),SECS,S.photoSecs,function(v){S.photoSecs=v;lastPhoto=now();saveSettings();drawSettings();});
-  chips($('sthm'),THEMES,S.theme,function(v){S.theme=v;saveSettings();cls();showPhoto();tiles();drawSettings();});
-  chips($('scol'),[[false,'Colour'],[true,'Black & white']],S.theme==='eink'?true:S.bw,function(v){if(S.theme==='eink'){return;}S.bw=v;saveSettings();cls();showPhoto();drawSettings();});
+  drawInterval();
+  chips($('sthm'),THEMES,S.theme,function(v){S.theme=v;saveSettings();setDark();cls();showPhoto();tiles();forecast();sizeHome();drawSettings();});
+  chips($('scol'),[[false,'Colour'],[true,'Black & white']],S.bw,function(v){S.bw=v;saveSettings();cls();showPhoto();drawSettings();});
+  chips($('sdark'),[['off','Never'],['night','At night'],['on','Always']],darkPref(),function(v){S.dark=v;saveSettings();setDark();cls();forecast();drawSettings();});
+  chips($('sloc'),[['auto','Automatic'],['fixed',S.place?S.place.n:'Choose a place']],S.loc==='fixed'?'fixed':'auto',function(v){
+    if(v==='auto'){S.loc='auto';saveSettings();if(APP&&Android.locate){Android.locate(true);}loadWeather();drawSettings();return;}
+    openSheet(false);
+    searchPlace('Where is this phone?',function(c){
+      S.place={n:c.n,lat:c.lat,lon:c.lon};S.loc='fixed';saveSettings();
+      if(APP&&Android.locate){Android.locate(false);}
+      loadWeather();
+    });
+  });
 }
 var sheetOpen=false;
-function openSheet(o){sheetOpen=o;$('sheet').className=o?'open':'';if(o){drawSettings();}else{wake();}}
+function openSheet(o){sheetOpen=o;$('sheet').className=o?'open':'';if(o){$('panel').style.maxHeight=Math.round(window.innerHeight*.96)+'px';$('panel').scrollTop=0;drawSettings();}else{wake();}}
 $('gear').appendChild(icon('gear'));$('sclose').appendChild(icon('x'));
 $('gear').onclick=function(){if(tapped()){openSheet(true);}};
 $('sclose').onclick=function(){openSheet(false);};
 $('sheet').onclick=function(e){if(e.target===$('sheet')){openSheet(false);}};
 
+// ---------- photo colours. The hue and shape of each picture come from sync.py (PHOTO_INFO in photos.js).
+// Only the hue and saturation change; the tones are fixed so the text always stays readable.
+function photoInfo(){return (window.PHOTO_INFO&&PHOTO_INFO[PH[pi]])||{hue:200,sat:20};}
+function paint(){
+  var c=photoInfo(),out=$('paint'),sat,h,bg,bg2,fg,mu,ac,ln,tint,b='body.t-photo ';
+  if(S.theme!=='photo'&&S.theme!=='pastel'){out.textContent='';return;}
+  sat=grayOn()?0:Math.max(26,Math.min(72,c.sat*1.5));h=c.hue;
+  bg='hsl('+h+','+sat+'%,'+(NIGHT?8:20)+'%)';bg2='hsl('+h+','+sat+'%,'+(NIGHT?5:13)+'%)';
+  fg='hsl('+h+','+Math.min(sat,28)+'%,'+(NIGHT?72:95)+'%)';
+  mu='hsla('+h+','+Math.min(sat,28)+'%,'+(NIGHT?72:95)+'%,.74)';
+  ac='hsl('+h+','+Math.min(sat+18,85)+'%,'+(NIGHT?58:76)+'%)';
+  ln='hsla('+h+','+Math.min(sat,28)+'%,'+(NIGHT?72:95)+'%,.22)';
+  tint='hsla('+h+','+Math.min(sat,28)+'%,'+(NIGHT?72:95)+'%,.13)';
+  // Pastel: the same idea with the tones turned over, a pale field and dark type. It follows Dark background too.
+  if(S.theme==='pastel'&&!NIGHT){
+    sat=grayOn()?0:Math.max(35,Math.min(65,c.sat*1.2));
+    bg='hsl('+h+','+sat+'%,88%)';bg2='hsl('+h+','+sat+'%,94%)';
+    fg='hsl('+h+','+Math.min(sat,45)+'%,16%)';
+    mu='hsla('+h+','+Math.min(sat,45)+'%,16%,.72)';
+    ac='hsl('+h+','+Math.min(sat+15,80)+'%,30%)';
+    ln='hsla('+h+','+Math.min(sat,45)+'%,16%,.25)';
+    tint='hsla('+h+','+Math.min(sat,45)+'%,16%,.09)';
+  }
+  function rule(sel,css){return sel.split(',').map(function(x){return b+x;}).join(',')+'{'+css+'}';}
+  out.textContent=[
+    'body.t-photo{background-color:'+bg+';color:'+fg+'}',
+    rule('.mut,.tile svg,.tile .tn,#tcount,.hr i,.cw,.cr,.ci,.pr span,#calhead,.ev span,.ft span,.fsub2,.frain,#fcount,#fstate,#upd,#panel h2,.del,.cd.wk,#cdwhen,.cdr i,#empty','color:'+mu),
+    rule('.btn,.chip.on,.seg .chip.on,#fgo,.done .box,.cd.today span,.cd.today.hol span,#dots span.on','background:'+fg+';border-color:'+fg+';color:'+bg),
+    rule('.cd.hol span,.ev.soon span,.fc svg,.cm svg,#wxi svg,.hr svg,#upd.warn','color:'+ac),
+    rule('.card,.todo li,.ev,.pr,.hrow,.cdr','border-color:'+ln),
+    rule('.chip,#freset,.seg','background:'+tint),
+    rule('.seg .chip','background:transparent'),
+    rule('.box','border-color:'+mu),
+    rule('#ring .bg','stroke:'+ln),rule('#ring .fg','stroke:'+fg),
+    rule('#dots,#gear','background:'+bg2),rule('#gear','color:'+fg),rule('#refresh,.sends','color:'+mu),rule('.strack','background:'+ln),rule('.sfill,.sthumb','background:'+fg),rule('#dots span','background:'+mu),
+    rule('#panel,#pickp','background:'+bg2)
+  ].join('\n');
+}
+// Home: one fixed 4:3 frame for every picture, so the layout never jumps. A tall photo sits whole on its blurred copy.
+function sizeHome(){
+  var f=$('frame'),w=window.innerWidth,h=window.innerHeight,u=Math.min(w,h)/100,fw,fh;
+  if(!f){return;}
+  if(theme()!=='t-photo'){f.style.width=f.style.height='';return;}
+  if(w>h){fh=h-$('strip').offsetHeight-$('hfoot').offsetHeight-3*u;fw=Math.min(fh*4/3,w*.6);fh=fw*3/4;}
+  else{fw=w-6*u;fh=fw*3/4;}
+  f.style.width=Math.round(fw)+'px';f.style.height=Math.round(fh)+'px';
+}
+
 // ---------- themes and night mode
-var NIGHT=false;
-function theme(){return S.theme==='eink'?'t-eink':S.theme==='auto'?(NIGHT?'t-dark':'t-light'):'t-dark';}
-function grayOn(){return S.bw||S.theme==='eink';}
+// NIGHT means "dark right now"; CLOCKNIGHT is only the hours in data.js. Photos are dimmed by the hours, never by the setting.
+var NIGHT=false,CLOCKNIGHT=false;
+function darkPref(){return S.dark||(S.theme==='eink'||S.theme==='pastel'?'off':'night');}
+function setDark(){var d=darkPref();NIGHT=d==='on'||(d==='night'&&CLOCKNIGHT);}
+function theme(){return S.theme==='photo'||S.theme==='pastel'?'t-photo':S.theme==='eink'?'t-eink':S.theme==='auto'?(NIGHT?'t-dark':'t-light'):'t-dark';}
+function grayOn(){return S.bw;}
 var CSSGRAY=false;
-function cls(){var idle=document.body.classList.contains('idle');document.body.className=theme()+(NIGHT?' night':'')+(grayOn()?' gray':'')+(CSSGRAY?' cssgray':'')+(idle?' idle':'')+(cur===0?' home':'');}
+function cls(){paint();var idle=document.body.classList.contains('idle');document.body.className=theme()+(NIGHT?' night':'')+(NIGHT&&CLOCKNIGHT?' dimph':'')+(grayOn()?' gray':'')+(CSSGRAY?' cssgray':'')+(idle?' idle':'')+(cur===0?' home':'');}
 
 // ---------- photos. The whole picture on a blurred copy of itself, so nothing is cropped.
 // Black & white uses real grey files (NNN.bw.jpg, made by sync.py), because a CSS filter would make the picture soft.
@@ -645,7 +859,7 @@ function setPhoto(src,fallback,isFallback){
   im.onload=function(){
     var u='url("'+src+'")',els=[$('frame'),$('pv')],i;
     for(i=0;i<2;i++){els[i].children[0].style.backgroundImage=u;els[i].children[1].style.backgroundImage=u;}
-    CSSGRAY=!!isFallback&&grayOn();cls();
+    CSSGRAY=!!isFallback&&grayOn();cls();sizeHome();
   };
   im.onerror=function(){if(fallback){setPhoto(fallback,null,true);}};
   im.src=src;
@@ -656,13 +870,16 @@ function showPhoto(){
   lastPhoto=now();lsSet('dash_pi',pi);
 }
 function nextPhoto(step){pi=(pi+(step||1)+PH.length)%PH.length;showPhoto();}
-function photoLoop(){if(PH.length>1&&now()-lastPhoto>=S.photoSecs*1000){nextPhoto(1);}}
+// Never mid-swipe: swapping a photo can drop the gesture.
+function photoLoop(){if(PH.length>1&&now()-swiped>=3000&&now()-lastPhoto>=S.photoSecs*1000-400){nextPhoto(1);}}
 $('frame').onclick=function(){if(tapped()){nextPhoto(1);}};
 $('pv').onclick=function(e){if(tapped()){nextPhoto(e.clientX<window.innerWidth/3?-1:1);}};
 
 // ---------- pages: swipe sideways between them, drag up and down inside one.
 // All done by script: the Android 4.4 WebView does not start native scrolling here. A drag is never a tap.
-var PG=['p0','p1','p2','pw','p3','p4'];if(D.habits===true){PG.push('p5');}else{$('p5').style.display='none';}  // habits stay saved while the page is off
+// Same order as the pages in the HTML. Habits stay saved while their page is off.
+var PG=['p0','p1','p2','pw','pc','p3','p4'];
+if(D.habits===true){PG.push('p5');}else{$('p5').style.display='none';}
 var PAGES=PG.length,cur=Math.min(lsGet('dash_page')||0,PAGES-1),pager=$('pager'),tx=0,ty=0,tt=0,axis=null,top0=0,swiped=0,vy=0,lastY=0,lastT=0,glide=null;
 function tapped(){return now()-swiped>300;}
 function moveTo(x,ease){pager.className=ease?'ease':'';pager.style.webkitTransform=pager.style.transform='translate3d('+x+'px,0,0)';}
@@ -683,13 +900,22 @@ function wake(){
 function stopGlide(){if(glide){clearInterval(glide);glide=null;}}
 document.addEventListener('touchstart',function(e){
   wake();
-  if(sheetOpen){return;}
-  var t=e.touches[0];tx=t.clientX;ty=t.clientY;tt=now();axis=null;top0=pageEl().scrollTop;vy=0;lastY=ty;lastT=tt;stopGlide();
+  var t=e.touches[0],o;
+  tx=t.clientX;ty=t.clientY;tt=now();axis=null;
+  if(sheetOpen){
+    top0=$('panel').scrollTop;
+    for(o=e.target;o;o=o.parentNode){if(o.id==='islide'){isliding=true;iSlide(t.clientX);return;}}
+    return;
+  }
+  top0=pageEl().scrollTop;vy=0;lastY=ty;lastT=tt;stopGlide();
+  for(o=e.target;o;o=o.parentNode){if(o.id==='fslide'&&!F.end){sliding=true;fSlide(t.clientX);return;}}
 },false);
 document.addEventListener('touchmove',function(e){
   e.preventDefault();
-  if(sheetOpen){return;}
   var t=e.touches[0],dx=t.clientX-tx,dy=t.clientY-ty,n=now();
+  if(isliding){iSlide(t.clientX);return;}
+  if(sheetOpen){if(Math.abs(dy)>10){swiped=n;$('panel').scrollTop=top0-dy;}return;}
+  if(sliding){fSlide(t.clientX);return;}
   if(!axis&&(Math.abs(dx)>10||Math.abs(dy)>10)){axis=Math.abs(dx)>Math.abs(dy)?'x':'y';swiped=n;}
   if(axis==='x'){
     if((cur===0&&dx>0)||(cur===PAGES-1&&dx<0)){dx=dx/3;}
@@ -700,7 +926,9 @@ document.addEventListener('touchmove',function(e){
     lastY=t.clientY;lastT=n;
   }
 },false);
-document.addEventListener('touchend',function(e){
+function dragEnd(e){
+  if(sliding){sliding=false;swiped=now();saveF();return;}
+  if(isliding){isliding=false;swiped=now();lastPhoto=now();saveSettings();return;}
   if(sheetOpen||!axis){return;}
   var t=e.changedTouches[0],dx=t.clientX-tx,fast=Math.abs(dx)/(now()-tt+1)>0.4,box,v;
   swiped=now();
@@ -710,15 +938,21 @@ document.addEventListener('touchend',function(e){
     box=pageEl();v=vy*16;
     glide=setInterval(function(){box.scrollTop-=v;v*=0.94;if(Math.abs(v)<0.4){stopGlide();}},16);
   }
-},false);
+  axis=null;
+}
+document.addEventListener('touchend',dragEnd,false);
+document.addEventListener('touchcancel',dragEnd,false);  // this WebView can cancel a drag mid-way; finish it the same way
 // The first Home screen is sized here: this WebView doesn't resolve a percentage height inside the pager.
 function layout(){
   var w=window.innerWidth,h=window.innerHeight,i;
   $('hero').style.height=h+'px';
+  // The footer text stops before the page dots, which sit over this row.
+  $('upd').style.maxWidth=Math.round(w/2-((3.3*PAGES+2.4)/2+13)*Math.min(w,h)/100)+'px';
   pager.style.width=w*PAGES+'px';
+  $('gear').style.left=Math.round(w/2+((3.3*PAGES+2.4)/2+1)*Math.min(w,h)/100)+'px';   // just right of the dots
   for(i=0;i<PAGES;i++){$(PG[i]).style.width=w+'px';$(PG[i]).style.height=h+'px';}
 }
-window.addEventListener('resize',function(){layout();setPage(cur,false);drawHabits();forecast();drawCal();},false);
+window.addEventListener('resize',function(){layout();sizeHome();setPage(cur,false);drawHabits();forecast();drawCal();},false);
 (function(){var i;for(i=0;i<PAGES;i++){$('dots').appendChild(el('span'));}$('dots').style.width=(3.3*PAGES+2.4)+'vmin';$('dots').style.marginLeft=-(3.3*PAGES+2.4)/2+'vmin';})();
 
 // ---------- clock
@@ -733,8 +967,9 @@ function tick(){
   $('pvclock').textContent=s;
   $('date').textContent=DAYS[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()];
   if(typeof f==='number'&&typeof t==='number'){n=f>t?(h>=f||h<t):(h>=f&&h<t);}
-  if(n!==NIGHT){NIGHT=n;cls();}
-  if(ymd(d)!==today){today=ymd(d);drawCal();drawHabits();drawFocus();}
+  var was=NIGHT,wasClock=CLOCKNIGHT;CLOCKNIGHT=n;setDark();if(was!==NIGHT||wasClock!==CLOCKNIGHT){cls();}
+  drawRefresh();
+  if(ymd(d)!==today){today=ymd(d);drawCal();drawHabits();drawFocus();drawCD();tiles();}
   if(d.getMinutes()!==lastMin){lastMin=d.getMinutes();drawCities();}
   photoLoop();weatherLoop();
 }
@@ -752,7 +987,7 @@ function drawTodo(){
   for(i=0;i<TD.items.length;i++){if(TD.items[i].done){ul.appendChild(row(TD.items[i]));}}
   $('empty').textContent=TD.items.length?'':'Nothing to do. Tap + Add.';
   $('tcount').textContent=TD.items.length?(open?open+' open':'all done'):'';
-  clear($('tolink'));$('tolink').appendChild(document.createTextNode(($('tht').textContent||'To do')+(open?' · '+open:'')));$('tolink').appendChild(icon('down'));
+  clear($('tolink'));$('tolink').appendChild(document.createTextNode((open?open+' to do':($('tht').textContent||'To do'))));$('tolink').appendChild(icon('down'));
 }
 function row(it){
   var li=el('li',it.done?'done':''),b=el('span','box none'),x=el('span','del none');
@@ -813,7 +1048,7 @@ function drawCal(){
   first=(new Date(calY,calM,1).getDay()-wk+7)%7;days=new Date(calY,calM+1,0).getDate();
   u=Math.min(window.innerWidth,window.innerHeight)/100;
   // landscape: the rows share the page height. Portrait: fixed rows, and the holiday list takes the rest.
-  rowH=window.innerWidth>window.innerHeight?Math.floor((window.innerHeight-g.getBoundingClientRect().top-g.children[0].offsetHeight-3*u)/Math.ceil((first+days)/7)):Math.round(11*u);
+  rowH=window.innerWidth>window.innerHeight?Math.floor((window.innerHeight-g.getBoundingClientRect().top-g.children[0].offsetHeight-9*u)/Math.ceil((first+days)/7)):Math.round(11*u);
   for(n=1-first;n<=days;n+=7){
     r=el('div','row');
     for(i=0;i<7;i++){
@@ -838,7 +1073,7 @@ function drawCal(){
     it=list[i];fd=new Date(it.d+'T12:00:00Z');lbl=sameMonth?ago(it.d):DAYS[fd.getUTCDay()];
     e=el('div','ev'+(sameMonth&&lbl!==''&&(lbl==='Today'||lbl==='Tomorrow')?' soon':''));
     e.appendChild(el('b','',it.n));
-    e.appendChild(el('span','',fd.getUTCDate()+' '+MON[fd.getUTCMonth()].slice(0,3)+' · '+lbl+(it.moon?' · depends on moon':'')));
+    e.appendChild(el('span','',fd.getUTCDate()+' '+MON[fd.getUTCMonth()].slice(0,3)+', '+lbl.toLowerCase()+(it.moon?', depends on moon':'')));
     $('calev').appendChild(e);
   }
 }
@@ -849,12 +1084,19 @@ $('ctitle').onclick=function(){if(tapped()){calY=undefined;drawCal();}};
 
 // ---------- focus timer. It keeps an end time rather than counting, so a page reload doesn't lose it.
 var MODES=[[25,'Focus'],[15,'Short'],[5,'Break']],F=lsGet('dash_focus')||{mins:25,left:1500,end:0,day:'',count:0},fT=null;
+var FMAX=120,sliding=false;
+function fSlide(x){
+  var r=$('ftrack').getBoundingClientRect(),v=Math.max(1,Math.min(FMAX,Math.round(1+(x-r.left)/r.width*(FMAX-1))));
+  if(v!==F.mins){F.mins=v;F.left=v*60;drawFocus();}
+}
 function fLeft(){return F.end?Math.max(0,Math.round((F.end-now())/1000)):F.left;}
 function drawFocus(){
   var left=fLeft(),tot=F.mins*60;
   if(F.day!==today){F.day=today;F.count=0;}
   $('ftime').textContent=p(Math.floor(left/60))+':'+p(left%60);
   $('rfg').style.strokeDashoffset=339.3*(1-left/tot);
+  $('ffill').style.width=$('fthumb').style.left=(F.mins-1)/(FMAX-1)*100+'%';
+  $('fslide').className=F.end?'off':'';
   chips($('fmodes'),MODES,F.mins,function(v){F.mins=v;F.left=v*60;F.end=0;fStop();saveF();drawFocus();});
   clear($('fgo'));$('fgo').appendChild(icon(F.end?'pause':'play'));$('fgo').appendChild(document.createTextNode(F.end?'Pause':left<tot?'Resume':'Start'));
   $('fstate').textContent=F.end?(F.mins>5?'Focusing':'On a break'):left<tot?'Paused':'Ready';
@@ -877,6 +1119,49 @@ $('fgo').onclick=function(){if(!tapped()){return;}
   if(F.end){F.left=fLeft();F.end=0;fStop();}else{F.end=now()+F.left*1000;fRun();}
   saveF();drawFocus();};
 $('freset').onclick=function(){if(!tapped()){return;}F.end=0;F.left=F.mins*60;fStop();saveF();drawFocus();};
+
+// ---------- countdowns: {list:[{n,date,yearly}]}. A yearly one rolls on to its next date by itself.
+var CD=null;
+function cdNext(c){
+  var t=ymd(new Date()),d=c.date,y;
+  if(!c.yearly||d>=t){return d;}
+  y=+t.slice(0,4);d=y+d.slice(4);
+  return d>=t?d:(y+1)+d.slice(4);
+}
+function cdDays(d){return Math.round((new Date(d+'T12:00:00')-new Date(ymd(new Date())+'T12:00:00'))/864e5);}
+function cdLabel(n){return n===0?'Today':n===1?'Tomorrow':n===-1?'Yesterday':n<0?(-n)+' days ago':n+' days';}
+function fmtDate(d){var x=new Date(d+'T12:00:00Z');return DAYS[x.getUTCDay()]+', '+x.getUTCDate()+' '+MON[x.getUTCMonth()]+' '+x.getUTCFullYear();}
+function saveCD(){saveState('countdowns','dash_cd',CD);drawCD();}
+function cdRemove(c){if(tapped()&&confirm('Remove "'+c.n+'"?')){CD.list.splice(CD.list.indexOf(c),1);saveCD();}}
+function drawCD(){
+  if(!CD){return;}
+  var a=CD.list.slice().sort(function(x,y){
+    var dx=cdDays(cdNext(x)),dy=cdDays(cdNext(y));
+    return (dx<0)-(dy<0)||dx-dy;}),rest=$('cdrest'),i,top=a[0],n;   // upcoming first, past ones last
+  clear(rest);
+  $('cdnum').textContent='';$('cdname').textContent='';$('cdwhen').textContent='';
+  if(!top){$('cdname').textContent='Add a date to count down to';$('cdwhen').textContent='A trip, a birthday, a deadline.';return;}
+  n=cdDays(cdNext(top));
+  $('cdnum').textContent=n>1||n<-1?String(Math.abs(n)):n===0?'0':'1';
+  $('cdname').textContent=(n===0?'Today: ':n===1?'Day until ':n===-1?'Day since ':n>0?'Days until ':'Days since ')+top.n;
+  $('cdwhen').textContent=fmtDate(cdNext(top));
+  $('cdnum').onclick=$('cdname').onclick=function(){cdRemove(top);};
+  function one(c){
+    var r=el('div','cdr'),d=cdNext(c),m=el('div','grow'),x=el('span','del none');
+    r.appendChild(el('b','none',String(Math.abs(cdDays(d)))));
+    m.appendChild(document.createTextNode(String(c.n)));m.appendChild(el('i','',cdLabel(cdDays(d))+', '+fmtDate(d)));r.appendChild(m);
+    x.appendChild(icon('x'));x.onclick=function(){cdRemove(c);};r.appendChild(x);
+    rest.appendChild(r);
+  }
+  for(i=1;i<a.length;i++){one(a[i]);}
+}
+$('cdadd').onclick=function(){if(!tapped()){return;}
+  var t=prompt('What are you counting down to?',''),id;
+  if(!t||!(t=t.replace(/^\s+|\s+$/g,''))){return;}
+  function got(d){if(d){CD.list.push({n:t,date:d,yearly:confirm('Repeat every year? Choose OK for birthdays and anniversaries.')});saveCD();}}
+  if(APP&&Android.pickDate){id=++CBN;CB[id]=got;Android.pickDate('nativeDone',id);}
+  else{got(prompt('Date, as YYYY-MM-DD',''));}
+};
 
 // ---------- habits: tap a square to tick that day. {list:[{n,days:{"2026-11-06":1}}]}
 var H=null;
@@ -915,10 +1200,12 @@ $('hadd').onclick=function(){if(!tapped()){return;}
 // ---------- start
 WX=lsGet('dash_wx');AQ=lsGet('dash_aq');
 H=loadState('habits','dash_habits')||{list:[]};
+CD=loadState('countdowns','dash_cd')||{list:[]};
 CT=loadState('cities','dash_cities')||{list:(D.cities||[]).slice()};
-if(APP&&Android.locate){Android.locate(D.weather!==false&&P.auto!==false);}  // no scans or lookups unless they're wanted
-cls();layout();setPage(cur,false);
-todo();showPhoto();tiles();showWeather();forecast();drawCal();drawHabits();drawFocus();drawCities();tick();
+if(APP&&Android.locate){Android.locate(D.weather!==false&&autoLoc());}  // no scans or lookups unless they're wanted
+setDark();cls();layout();setPage(cur,false);
+todo();showPhoto();tiles();showWeather();forecast();drawCal();drawHabits();drawFocus();drawCities();drawCD();sizeHome();tick();
+if(saveSettingsSoon){saveSettings();}
 if(F.end){fRun();fStep();}
 wake();
 setInterval(tick,5000);
