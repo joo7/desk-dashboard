@@ -159,7 +159,7 @@ These are optional but worth doing. All of them can be undone in Settings.
 | `python3 tools/sync.py todo list` | Read the to-do list. Also `add "text"`, `done N`, `rm N` |
 | `python3 tools/sync.py doctor` | Test the connection and find what is slow |
 
-On the phone: **swipe sideways** to change page, **drag up or down** to scroll, **tap a photo** for the next one, and tap the **gear** for settings.
+On the phone: **swipe sideways** to change page, **drag up or down** to scroll, **tap the right or left of a photo** for the next or previous one, and tap the **gear** for settings.
 
 **After the phone restarts**, `adb` over Wi-Fi switches itself off. The dashboard comes back on its own, but to send changes you need to plug in USB once and run `python3 tools/sync.py setup` again.
 

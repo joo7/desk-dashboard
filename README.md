@@ -107,7 +107,7 @@ python3 tools/test_sync.py                  # run the tests
 
 - **Swipe sideways**: change page. The dots and gear show when you touch the screen and fade after a few seconds
 - **Drag up or down**: scroll the page. On Home, this reaches the tiles and to-do list
-- **Tap a photo**: next photo (on the Photos page, tap the left side to go back)
+- **Tap a photo**: the right half shows the next photo, the left half goes back. Photos play in shuffled rounds, so none repeats until all have shown
 - **Gear icon**: how often the photo changes (a slider from 5 seconds to 1 hour), the style (Photo colours, Pastel, Modern dark, E-ink, or Light with dark at night), colour or black-and-white photos, when the background goes dark (never, at night, always), and the location (automatic, or a place you choose)
 - **Refresh icon on Home**: looks for the phone's position and updates the weather. It can be used once a minute
 - **+ Add**: add a to-do item or habit. **✕**: delete one. **Tap** an item to tick it

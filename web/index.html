@@ -796,7 +796,7 @@ $('sheet').onclick=function(e){if(e.target===$('sheet')){openSheet(false);}};
 
 // ---------- photo colours. The hue and shape of each picture come from sync.py (PHOTO_INFO in photos.js).
 // Only the hue and saturation change; the tones are fixed so the text always stays readable.
-function photoInfo(){return (window.PHOTO_INFO&&PHOTO_INFO[PH[pi]])||{hue:200,sat:20};}
+function photoInfo(){return (window.PHOTO_INFO&&PHOTO_INFO[SEEN[seenAt]])||{hue:200,sat:20};}
 function paint(){
   var c=photoInfo(),out=$('paint'),sat,h,bg,bg2,fg,mu,ac,ln,tint,b='body.t-photo ';
   if(S.theme!=='photo'&&S.theme!=='pastel'){out.textContent='';return;}
@@ -856,7 +856,31 @@ function cls(){paint();var idle=document.body.classList.contains('idle'),c=theme
 // Black & white uses real grey files (NNN.bw.jpg, made by sync.py), because a CSS filter would make the picture soft.
 // An older photo set without them falls back to the filter.
 // The backdrop is a small copy blurred ahead of time (NNN.blur.jpg, also from sync.py): blurring a full photo live froze this phone for up to 0.7 s.
-var PH=(window.PHOTOS&&PHOTOS.length)?PHOTOS:[D.image||'photo.jpg'],pi=(lsGet('dash_pi')||0)%PH.length,lastPhoto=0;
+var PH=(window.PHOTOS&&PHOTOS.length)?PHOTOS:[D.image||'photo.jpg'],lastPhoto=0;
+// Shuffled in rounds: every photo shows once before any repeats. SEEN is what has been shown, oldest first, and
+// seenAt is the one on screen, so going back walks SEEN. TOSHOW is what is left of this round. Kept across restarts.
+var PQ=lsGet('dash_pq')||{},SEEN=PQ.seen||[],TOSHOW=PQ.left||[],seenAt=PQ.at||0;
+function mix(a){var i,j,t;for(i=a.length-1;i>0;i--){j=Math.floor(Math.random()*(i+1));t=a[i];a[i]=a[j];a[j]=t;}return a;}
+// A new round never opens with the photo that closed the last one.
+function drawPhoto(){
+  var over;
+  if(!TOSHOW.length){TOSHOW=mix(PH.slice());if(TOSHOW.length>1&&TOSHOW[0]===SEEN[seenAt]){TOSHOW.push(TOSHOW.shift());}}
+  SEEN.push(TOSHOW.shift());seenAt=SEEN.length-1;
+  over=SEEN.length-Math.max(PH.length*2,2);
+  if(over>0){SEEN.splice(0,over);seenAt-=over;}
+}
+// Match the round to the photo list: drop what has gone and slip anything new in at a random place.
+// If the photo on screen has gone, the next one in line takes over.
+function fitPhotos(){
+  var seen=[],at=-1,i;
+  for(i=0;i<SEEN.length;i++){if(PH.indexOf(SEEN[i])>=0){if(i>=seenAt&&at<0){at=seen.length;}seen.push(SEEN[i]);}}
+  TOSHOW=TOSHOW.filter(function(n){return PH.indexOf(n)>=0;});
+  for(i=0;i<PH.length;i++){if(seen.indexOf(PH[i])<0&&TOSHOW.indexOf(PH[i])<0){TOSHOW.splice(Math.floor(Math.random()*(TOSHOW.length+1)),0,PH[i]);}}
+  SEEN=seen;seenAt=at<0?seen.length-1:at;
+  if(at<0){drawPhoto();}
+}
+function savePhotoSpot(){lsSet('dash_pq',{seen:SEEN,left:TOSHOW,at:seenAt});}
+fitPhotos();
 function setPhoto(src,fallback,isFallback){
   var im=new Image(),soft=src.replace(/\.jpg$/,'.blur.jpg');
   function apply(baked){
@@ -874,28 +898,35 @@ function setPhoto(src,fallback,isFallback){
   im.src=src;
 }
 function showPhoto(){
-  var src=PH[pi];
+  var src=SEEN[seenAt];
   if(grayOn()){setPhoto(src.replace(/\.jpg$/,'.bw.jpg'),src,false);}else{setPhoto(src,null,false);}
-  lastPhoto=now();lsSet('dash_pi',pi);
+  lastPhoto=now();savePhotoSpot();
 }
-function nextPhoto(step){pi=(pi+(step||1)+PH.length)%PH.length;showPhoto();}
+// Back stops at the oldest photo remembered. Forward retraces what was gone back over, then carries on with the round.
+function nextPhoto(step){
+  if(step<0){if(seenAt<=0){return;}seenAt--;}
+  else if(seenAt<SEEN.length-1){seenAt++;}
+  else{drawPhoto();}
+  showPhoto();
+}
 // Never mid-swipe: swapping a photo can drop the gesture.
 function photoLoop(){if(PH.length>1&&now()-swiped>=3000&&now()-lastPhoto>=S.photoSecs*1000-400){nextPhoto(1);}}
 // The photo page on the laptop changes photos.js on the phone. The list is read again here, so no restart is needed.
-// A new picture shows at once; if the one on screen was hidden or deleted, the next one takes over.
+// A new picture shows at once and counts as shown in this round; if the one on screen was hidden or deleted, the next one takes over.
 var listSig=(window.PHOTOS||[]).join(),listAt=0;
 function applyPhotos(){
   var sig=(window.PHOTOS||[]).join(),next,cur,fresh=null,i;
   if(sig===listSig){return;}
   next=PHOTOS.length?PHOTOS:[D.image||'photo.jpg'];
-  cur=PH[pi];
+  cur=SEEN[seenAt];
   for(i=0;i<next.length;i++){if(PH.indexOf(next[i])<0){fresh=next[i];}}
   listSig=sig;PH=next;
   console.log('photo list changed: '+PH.length+' photos');
-  if(fresh){pi=PH.indexOf(fresh);showPhoto();return;}
-  i=PH.indexOf(cur);
-  if(i>=0){pi=i;lsSet('dash_pi',pi);return;}
-  pi=Math.min(pi,PH.length-1);showPhoto();
+  fitPhotos();
+  i=TOSHOW.indexOf(fresh);
+  if(fresh&&i>=0){TOSHOW.splice(i,1);SEEN.splice(seenAt+1,0,fresh);seenAt++;}
+  if(SEEN[seenAt]===cur){savePhotoSpot();return;}
+  showPhoto();
 }
 function checkPhotos(){
   if(now()-listAt<10000||now()-swiped<3000){return;}
@@ -907,8 +938,10 @@ function checkPhotos(){
   s.src='photos.js?'+listAt;
   document.body.appendChild(s);
 }
-$('frame').onclick=function(){if(tapped()){nextPhoto(1);}};
-$('pv').onclick=function(e){if(tapped()){nextPhoto(e.clientX<window.innerWidth/3?-1:1);}};
+// Left half of a photo goes back, right half goes forward.
+function photoTap(e){var r=this.getBoundingClientRect();if(tapped()){nextPhoto(e.clientX<r.left+r.width/2?-1:1);}}
+$('frame').onclick=photoTap;
+$('pv').onclick=photoTap;
 
 // ---------- pages: swipe sideways between them, drag up and down inside one.
 // All done by script: the Android 4.4 WebView does not start native scrolling here. A drag is never a tap.
