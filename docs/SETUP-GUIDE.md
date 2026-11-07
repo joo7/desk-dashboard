@@ -38,7 +38,7 @@ On Debian or Ubuntu: `sudo apt install adb imagemagick`. The tools use only Pyth
 ### Step 1: Get the code
 
 ```bash
-git clone <this repository's address>
+git clone https://github.com/joo7/desk-dashboard.git
 cd desk-dashboard
 ```
 
