@@ -159,4 +159,4 @@ Wi-Fi location: [beaconDB](https://beacondb.net). TLS: [Conscrypt](https://githu
 ## Licence
 
 MIT, see [LICENSE](LICENSE). The Hind font in `web/fonts/` keeps its own licence (SIL OFL, see `web/fonts/OFL-Hind.txt`),
-and the app bundles Conscrypt (Apache 2.0).
+and the app bundles Conscrypt (Apache 2.0). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the full list.
