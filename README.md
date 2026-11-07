@@ -155,3 +155,8 @@ Set `KS_PASS` to use your own keystore password.
 
 Weather and air quality: [Open-Meteo](https://open-meteo.com). Place names: OpenStreetMap Nominatim.
 Wi-Fi location: [beaconDB](https://beacondb.net). TLS: [Conscrypt](https://github.com/google/conscrypt) (Apache 2.0).
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). The Hind font in `web/fonts/` keeps its own licence (SIL OFL, see `web/fonts/OFL-Hind.txt`),
+and the app bundles Conscrypt (Apache 2.0).
