@@ -6,6 +6,10 @@ Turns an old Android phone (built for an Honor Holly, Android 4.4) into an alway
 
 ![Three styles: photo colours, dark and E-ink](docs/images/overview-styles.jpg)
 
+![The E-ink style on Photos, This week, Weather, Countdowns, Calendar and Focus](docs/images/overview-eink.jpg)
+
+*E-ink style: black and white, no shading, for e-paper and low-power screens.*
+
 *Screenshots use sample data.*
 
 - **Home**: clock, weather, the next hours and a whole photo, with air quality and sunrise/sunset below. Scroll down for your to-do list
