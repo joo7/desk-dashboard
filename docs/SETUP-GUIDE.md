@@ -6,9 +6,22 @@ This guide turns an old Android phone into an always-on desk display: a big cloc
 
 ![Three styles: photo colours, dark and E-ink](images/overview-styles.jpg)
 
-![The E-ink style on Photos, This week, Weather, Countdowns, Calendar and Focus](images/overview-eink.jpg)
+<details>
+<summary>See every page in each style</summary>
 
-*E-ink style: black and white, no shading, for e-paper and low-power screens.*
+**Modern dark**
+
+![Modern dark style on six pages](images/overview-dark.jpg)
+
+**Light (photo colours, pastel)**
+
+![Light style on six pages](images/overview-pastel.jpg)
+
+**E-ink** (black and white, no shading)
+
+![E-ink style on six pages](images/overview-eink.jpg)
+
+</details>
 
 *Screenshots use sample data. The pages shown are Home, Photos, This week, Weather, Countdowns and Calendar. The styles are Photo colours, Modern dark and E-ink.*
 
