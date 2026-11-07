@@ -72,7 +72,7 @@ This does five things and prints each one:
 4. Switches `adb` to work over Wi-Fi (port 5555), so you can unplug the cable.
 5. Sends the dashboard files to the phone.
 
-Over Wi-Fi, `adb` has no password of its own. Read [section 5](#5-wi-fi-and-security) before you leave it switched on.
+When you have finished setting up, run `adb usb` to switch Wi-Fi `adb` off again (see [section 5](#5-wi-fi-and-security)).
 
 ### Step 4: Install the Desk app
 
@@ -224,70 +224,9 @@ Turn the phone and the layout follows. (Your phone's rotation lock is respected.
 
 ## 5. Wi-Fi and security
 
-Your phone and laptop talk to each other, and the phone talks to the internet, over your Wi-Fi. This section covers what that exposes. It is based on reading the code and on checks made on the tested phone.
-
-### The short version
-
-- **Nothing is listening on the phone by default.** Scanning all 65,535 TCP ports from another computer on the same Wi-Fi found none open
-- The risk that matters most is **`adb` over Wi-Fi**, which `setup` switches on. Switch it off when you are done, and never use it on a Wi-Fi network you don't trust
-- The phone's operating system **can no longer be patched**. Treat it as a single-purpose device that you don't log into, browse on or install other apps on
-- The dashboard sends your **approximate location** to a few public services. Turn that off with `auto: false`
-
-### What I checked
-
-| Check | Result |
-|---|---|
-| All 65,535 TCP ports of the phone, scanned from the same Wi-Fi | **None open.** UDP was not scanned. At the time, `adb` over Wi-Fi was off because the phone had just restarted |
-| Does the app check certificates and server names? | **Yes.** It uses the normal server-name check and trusts the phone's own certificates plus 8 bundled public ones. It does not disable any check |
-| Where does the app connect? | Only HTTPS, to `api.open-meteo.com`, `air-quality-api.open-meteo.com`, `geocoding-api.open-meteo.com`, `nominatim.openstreetmap.org` and `api.beacondb.net` |
-| Can the dashboard page load anything from the internet? | **No.** The page runs from a local file with network loading blocked, and can only ask the app to fetch from the three Open-Meteo hosts |
-| Does the repository contain Wi-Fi passwords or personal addresses? | **No.** The phone's address, its serial number, your location and the signing key are all kept out of git |
-| Who can reach the photo page? | Only your laptop. It listens on `127.0.0.1` (confirmed with `ss -ltn`), and refuses requests that come from other websites |
-
-### Risks, from highest to lowest
-
-**1. `adb` over Wi-Fi. Medium to high, while it is switched on.**
-`setup` opens port 5555. `adb` gives full control: installing apps and reading or changing files. Its traffic is not encrypted, and anyone on your network can try to connect.
-
-- It normally needs your laptop's key, which the phone accepted at the *Allow USB debugging?* box. Check this is enforced on your phone: `adb shell getprop ro.adb.secure` should print `1`. If it prints `0` or nothing, **anyone on the Wi-Fi can control the phone**, so keep Wi-Fi `adb` off
-- Switch it off after setup: with the phone still connected, run `adb usb`. A restart also switches it off
-- Use it only on a network you control. On shared Wi-Fi (an office, a hostel, a café) use USB only
-
-**2. An out-of-date phone. Medium, and it can't be fixed.**
-Android 4.4 stopped getting security updates years ago, and its built-in web view and system parts have public, unpatched flaws. This is mostly harmless on a locked-down display, because the dashboard never opens web pages from the internet. But the more you use the phone for anything else, the more it matters.
-
-- Don't sign in to any account, open a browser, or install other apps
-- Put it on a **guest or IoT network** if your router has one, so a compromised phone can't see your other devices
-- Keep Bluetooth and NFC off
-
-**3. Your location leaves the phone. Privacy, low to medium.**
-With `auto: true`, every 15 minutes the app may send:
-
-- your position to **Open-Meteo** (weather) and **OpenStreetMap Nominatim** (the place name)
-- the **names of nearby Wi-Fi networks and mobile towers** to **beaconDB**, to work out where you are. Networks whose name ends in `_nomap` are left out
-- the same kind of nearby-network details to **Google**, if the phone's location mode uses Google's service
-
-These services see your home's rough position and the times you use it. If that matters, set `auto: false` in `web/data.js`: the app then does no scanning or position lookups and uses only the place you typed.
-
-**4. The weather connection itself. Low.**
-Everything is HTTPS with certificate checks, so someone on your Wi-Fi can't read or change it. They can see *which* services the phone contacts, and can block it. The security library the app uses to speak modern HTTPS (Conscrypt 2.5.3) is the newest one that works on Android 4.4, and it is no longer updated. That is fine for weather numbers, but it isn't suitable for anything sensitive. Don't extend the app to carry passwords or private data.
-
-**5. Other apps can change the dashboard. Low on a dedicated phone.**
-The dashboard files live in shared storage (`/sdcard/dash`), where any app with storage permission could replace them. This matters only if you install other apps.
-
-**6. The app's own doors. Low.**
-The app has a receiver that starts it after a restart, which another app on the same phone could trigger. The worst it can do is open the dashboard.
-
-### Do these
-
-- [ ] Use a Wi-Fi network with **WPA2** and a strong password. Android 4.4 can't join WPA3-only networks, and open or WEP networks are unsafe
-- [ ] After setup, run `adb usb`, or unplug and rely on USB for later changes
-- [ ] Don't forward port 5555 (or any port) on your router
-- [ ] Don't sign in to Google or any other account on the phone
-- [ ] Prefer a guest network, and turn off Bluetooth and NFC
-- [ ] Set `auto: false` if you don't want location lookups
-- [ ] If you build the app yourself, set your own signing password: `KS_PASS=your-password android/build.sh`. The default is `deskdash`. Keep `android/desk.keystore` private and backed up
-- [ ] If you change `HOST` in `tools/photos_ui.py` away from `127.0.0.1`, anyone on your Wi-Fi could add and delete your photos. Don't
+- **Safe to use at home.** Apart from Wi-Fi `adb` (see the next line), nothing on the phone accepts connections from your Wi-Fi, and the phone only sends weather and location requests out. Only use it on a network you trust, and don't sign in to any account on it, because Android 4.4 no longer gets security updates.
+- **After setup, run `adb usb`** with the phone plugged in. That switches Wi-Fi `adb`, the one way into the phone, off again. A phone restart does the same.
+- **Location:** with `auto: true` the dashboard sends your rough location to weather and map services. Set `auto: false` in `web/data.js` to stop that.
 
 ## 6. When something goes wrong
 

@@ -1,6 +1,6 @@
 # Desk dashboard
 
-Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages. New here? The [setup guide](docs/SETUP-GUIDE.md) has the step-by-step process, screenshots, which phones work, and Wi-Fi security notes.
+Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages. New here? The [setup guide](docs/SETUP-GUIDE.md) has the step-by-step process, screenshots, and which phones work.
 
 - **Home**: clock, weather, the next hours and a whole photo, with air quality and sunrise/sunset below. Scroll down for your to-do list
 - **Photos**: full-screen slideshow
@@ -131,15 +131,10 @@ A small full-screen app that shows `/sdcard/dash/index.html`. Compared with the 
   or the phone maker's), or from nearby Wi-Fi networks and mobile towers via [beaconDB](https://beacondb.net).
   If none work it uses the place in `web/data.js`
 
-### Privacy
+### Privacy and safety
 
-With `place.auto: true`, the app sends nearby Wi-Fi and tower IDs to beaconDB every 15 minutes unless GPS has a recent
-fix, your position to Open-Meteo for weather, and to OpenStreetMap Nominatim for the place name.
-With `place.auto: false` it does no scanning or position lookups, and uses the place in `web/data.js`.
-If the phone's location mode uses Google's location service, Google also receives nearby Wi-Fi and tower details.
-
-The page lives on shared storage, where an app with storage permission could replace it. So the page can't reach the
-network directly, and the app only fetches from the weather hosts for it.
+With `place.auto: true` the app sends your rough location to Open-Meteo and OpenStreetMap (and to beaconDB or Google when the phone uses them). Set `place.auto: false` to stop that.
+The phone doesn't accept connections from your network. After setup run `adb usb` to switch Wi-Fi `adb` off, and don't sign in to accounts on it: Android 4.4 gets no security updates.
 
 ### Building it
 
