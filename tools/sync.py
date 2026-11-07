@@ -7,7 +7,9 @@
   push                   send everything to the phone and open it (USB or Wi-Fi)
   pick <serial>          choose which device is the dashboard phone (only needed with several attached)
   image <file>           show this one picture instead of the photo set (resized if ImageMagick exists) and push
-  photos [folder]        make the phone's photos match photos/ (or the folder given): adds new, removes deleted
+                         (the photo set stays on the phone: show it again from the photo page)
+  photos <folder>        add the pictures in a folder to the phone; never removes any
+                         (to see, hide, delete or drop photos, use the page instead: python3 tools/photos_ui.py)
   todo list|add "text"|done N|undone N|rm N|edit     read or change the phone's to-do list
   tasks                  just rebuild tasks.js
   (weather, air quality, sunrise/sunset and location are handled on the phone; settings are in web/data.js)
@@ -17,7 +19,7 @@
 Paths: the page lives in web/, the app in dist/DeskDash.apk (or android/build/ after android/build.sh).
 Every adb call is timed and written to sync.log in the repo folder (not committed).
 """
-import colorsys, json, os, re, shutil, socket, subprocess, sys, time
+import colorsys, filecmp, json, os, re, shutil, socket, subprocess, sys, tempfile, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repo folder
 WEB = os.path.join(ROOT, "web")                                       # everything sent to the phone
@@ -25,7 +27,10 @@ DEST, PORT = "/sdcard/dash", "5555"
 TODO, IPFILE = os.path.join(WEB, "todo.txt"), os.path.join(ROOT, ".phone_ip")
 SERIALFILE, OPSFILE = os.path.join(ROOT, ".phone_serial"), os.path.join(ROOT, ".todo_ops.json")
 SRGB = ("/usr/share/color/icc/colord/sRGB.icc", "/usr/share/color/icc/ghostscript/srgb.icc")
-PHOTOS = os.path.join(ROOT, "photos")                                 # drop your pictures here, then run: sync.py photos
+PHOTO_DIR = DEST + "/photos"                                          # the phone is the only home of the photos
+PHOTO_JS = DEST + "/photos.js"                                        # which of them the dashboard shows, in order
+SUFFIXES = (".jpg", ".bw.jpg", ".blur.jpg", ".bw.blur.jpg")           # the files on the phone for one picture
+PHOTO_FILE = re.compile(r"([A-Za-z0-9_-]+?)(\.bw\.blur|\.bw|\.blur)?\.jpg")
 STATE = DEST + "/todo-state.json"                                     # the phone's to-do list, written by the page
 LOG, T0, SER = os.path.join(ROOT, "sync.log"), time.time(), None
 HINT = {"unauthorized": "-> unlock the phone and tap OK on the 'Allow USB debugging' pop-up",
@@ -227,9 +232,21 @@ def check_page():
         log("page loaded with no script errors")
 
 
-def push():
+def open_app():
+    """Restart the Desk app so it reads what was just sent, and check the page came up."""
+    run("logcat", "-c", timeout=10)
+    run("shell", "am", "force-stop", "com.deskdash", timeout=10)
+    run("shell", "am", "start", "-n", "com.deskdash/.Main", timeout=20)
+    check_page()
+
+
+def push(keep_phone_list=True):
     step("sending files")
     connect()
+    if keep_phone_list:     # the phone decides which photos are shown: this laptop's copy of the list may be out of date
+        phone = read_phone_list()
+        if phone:
+            write_photos_js(*phone)
     make_tasks(sync_todo()[1])
     if not os.path.exists(os.path.join(WEB, "data.js")):
         shutil.copy(os.path.join(WEB, "data.example.js"), os.path.join(WEB, "data.js"))
@@ -250,10 +267,7 @@ def push():
             run("push", path, DEST + "/fonts/" + name, timeout=90)
     log("files now on phone:\n" + run("shell", "ls", "-l", DEST, timeout=10))
     if "com.deskdash" in run("shell", "pm", "list", "packages", "com.deskdash", timeout=20):
-        run("logcat", "-c", timeout=10)
-        run("shell", "am", "force-stop", "com.deskdash", timeout=10)
-        run("shell", "am", "start", "-n", "com.deskdash/.Main", timeout=20)
-        check_page()
+        open_app()
         log("push finished (opened in the Desk app)")
         return
     # closing the browser first makes it load the new files instead of a cached copy
@@ -405,6 +419,12 @@ def prepare(src, dst):
         log("WARNING: %s is only %sx%s pixels and will look blurry. Use a larger copy if you have one." % (os.path.basename(src), w, h))
 
 
+def blur_copy(path):
+    """Make the small blurred, darkened backdrop (x.blur.jpg) for one prepared picture. Blurring a full photo live freezes the phone."""
+    subprocess.run(["convert", path, "-resize", "200x200", "-virtual-pixel", "edge", "-blur", "0x4.5", "-evaluate", "multiply", "0.62",
+                    "-strip", "-quality", "85", path[:-4] + ".blur.jpg"], check=True)
+
+
 def pick_hue(hist):
     """Choose the photo's colour from [(pixel count, r, g, b)]: common and colourful wins. Returns (hue, saturation %)."""
     total = sum(h[0] for h in hist) or 1
@@ -451,58 +471,141 @@ def image(src):
         shutil.copy(src, dst)
     # a photo set would take priority over this picture; take it out of rotation (files stay, re-run 'photos' to restore)
     write_photos_js([], {"photo.jpg": photo_info(dst)} if shutil.which("convert") else {})
-    push()
+    push(keep_phone_list=False)
 
 
 def photo_name(src):
     """Phone file name for a picture: plain characters only, and the same every time so unchanged photos are skipped."""
-    return re.sub(r"[^A-Za-z0-9_-]", "_", src) + ".jpg"
+    return (re.sub(r"[^A-Za-z0-9_-]", "_", src).lstrip("-_") or "photo") + ".jpg"
 
 
-def photos(folder=None):
-    """Make the phone match the folder (default: photos/ in the repo): add new pictures, update changed ones, drop removed ones."""
-    folder = os.path.abspath(folder or PHOTOS)
-    out = os.path.join(WEB, "photos")
-    if folder == out:
-        sys.exit("web/photos/ is generated. Put your pictures in photos/ instead.")
+def base_of(phone_file):
+    """IMG_1_jpg for any of IMG_1_jpg.jpg, .bw.jpg, .blur.jpg and .bw.blur.jpg; None for anything else."""
+    m = PHOTO_FILE.fullmatch(phone_file)
+    return m.group(1) if m else None
+
+
+def parse_photo_list(text):
+    """(names, info) from the text of photos.js; None if it can't be read, so a bad read never replaces the real list."""
+    m = re.search(r"var PHOTOS = (\[.*?\]);", text)
+    i = re.search(r"var PHOTO_INFO = (\{.*\});", text)
+    try:
+        return json.loads(m.group(1)), json.loads(i.group(1)) if i else {}
+    except (AttributeError, ValueError):
+        return None
+
+
+def read_phone_list():
+    """The phone's list of shown photos as (names, info), or None if it has never had one. Stops if it can't be read."""
+    out = run("shell", "cat", PHOTO_JS, timeout=20)
+    if "No such file" in out:
+        return None
+    parsed = parse_photo_list(out)
+    if parsed is None:
+        sys.exit("Couldn't read the photo list from the phone. Check the connection and try again.")
+    return parsed
+
+
+def save_phone_list(names, info):
+    write_photos_js(names, info)
+    # Swapped in whole: the running dashboard reads this file every few seconds and must never see half of it.
+    run("push", os.path.join(WEB, "photos.js"), PHOTO_JS + ".new", timeout=30)
+    run("shell", "mv", PHOTO_JS + ".new", PHOTO_JS, timeout=20)
+    if (read_phone_list() or ([], {}))[0] != names:
+        sys.exit("The photo list didn't reach the phone. Check the connection and try again.")
+
+
+def make_copies(src, folder):
+    """Everything the phone needs for one picture, as pic.jpg and friends in folder. Returns its colour info."""
+    main = os.path.join(folder, "pic.jpg")
+    prepare(src, main)
+    blur_copy(main)
+    blur_copy(main[:-4] + ".bw.jpg")
+    return photo_info(main)
+
+
+def send_copies(folder, base):
+    """Send one picture's files, the main one last, so a photo only counts as there once it's all there."""
+    for s in reversed(SUFFIXES):
+        path = os.path.join(folder, "pic" + s)
+        name = base + s
+        run("push", path, PHOTO_DIR + "/" + name, timeout=90)
+        if phone_sizes(PHOTO_DIR).get(name) != str(os.path.getsize(path)):
+            sys.exit("%s didn't reach the phone. Check the connection and try again." % name)
+
+
+def same_on_phone(main, files):
+    """The phone picture identical to this prepared file, if any. Sizes pick the candidates; only the bytes decide."""
+    size = str(os.path.getsize(main))
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, s in files.items():
+            if s == size and base_of(name) == name[:-4]:
+                copy = os.path.join(tmp, "phone.jpg")
+                run("pull", PHOTO_DIR + "/" + name, copy, timeout=60)
+                if os.path.exists(copy) and filecmp.cmp(main, copy, shallow=False):
+                    return name[:-4]
+    return None
+
+
+def add_picture(src, original):
+    """Put one picture on the phone and on the dashboard. Returns (name, 'added', 'same' or 'restored')."""
+    names, info = read_phone_list() or ([], {})
+    run("shell", "mkdir", "-p", PHOTO_DIR)
+    files = phone_sizes(PHOTO_DIR)
+    with tempfile.TemporaryDirectory() as work:
+        details = make_copies(src, work)
+        same = same_on_phone(os.path.join(work, "pic.jpg"), files)
+        if same:
+            if "photos/" + same + ".jpg" in names:
+                return same, "same"
+            show_pictures([same], names, info, files)
+            return same, "restored"
+        base = stem = photo_name(os.path.basename(original))[:-4]
+        n = 2
+        while any(base_of(f) == base for f in files):
+            base, n = "%s-%d" % (stem, n), n + 1
+        send_copies(work, base)
+    key = "photos/" + base + ".jpg"
+    info[key] = details
+    save_phone_list(names + [key], info)
+    return base, "added"
+
+
+def show_pictures(bases, names, info, files):
+    """Put hidden photos back on the dashboard, making any of their files that are missing (photos from an older version)."""
+    for base in bases:
+        key = "photos/" + base + ".jpg"
+        missing = not all(base + s in files for s in SUFFIXES)
+        if missing or key not in info:
+            with tempfile.TemporaryDirectory() as work:
+                copy = os.path.join(work, "phone.jpg")
+                run("pull", PHOTO_DIR + "/" + base + ".jpg", copy, timeout=60)
+                if not os.path.exists(copy):
+                    sys.exit("%s couldn't be read from the phone." % base)
+                info[key] = make_copies(copy, work)
+                if missing:
+                    for s in SUFFIXES[1:]:
+                        run("push", os.path.join(work, "pic" + s), PHOTO_DIR + "/" + base + s, timeout=90)
+        if key not in names:
+            names = names + [key]
+    save_phone_list(names, info)
+
+
+def photos(folder):
+    """Add every picture in a folder to the phone. Nothing is removed, and nothing is kept on this laptop."""
+    folder = os.path.abspath(folder)
     if not os.path.isdir(folder):
         sys.exit("Folder not found: " + folder)
     if not shutil.which("convert"):
         sys.exit("ImageMagick is needed for photos: sudo apt install imagemagick")
-    exts = (".jpg", ".jpeg", ".png", ".webp", ".gif")
-    all_files = sorted(os.listdir(folder))
-    files = [f for f in all_files if f.lower().endswith(exts)]
-    for f in all_files:
-        if f not in files:
-            log("skipped %s (not a .jpg .png .webp or .gif)" % f)
+    exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif")
+    files = [f for f in sorted(os.listdir(folder)) if f.lower().endswith(exts)]
     if not files:
-        sys.exit("No pictures (.jpg .png .webp .gif) found in " + folder)
+        sys.exit("No pictures (.jpg .png .webp .gif .heic) found in " + folder)
     connect()
-    os.makedirs(out, exist_ok=True)
-    names, changed = [], 0
     for f in files:
-        name = photo_name(f)
-        dst, src = os.path.join(out, name), os.path.join(folder, f)
-        if not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
-            prepare(src, dst)
-            changed += 1
-            log("prepared " + f)
-        names.append(name)
-    wanted = set(names) | {n[:-4] + ".bw.jpg" for n in names}
-    for n in os.listdir(out):
-        if n not in wanted:
-            os.remove(os.path.join(out, n))
-    run("shell", "mkdir", "-p", DEST + "/photos")
-    sizes = phone_sizes(DEST + "/photos")
-    for n in sizes:
-        if n not in wanted:
-            run("shell", "rm", DEST + "/photos/" + n)
-    for n in sorted(wanted):
-        if sizes.get(n) != str(os.path.getsize(os.path.join(out, n))):
-            run("push", os.path.join(out, n), DEST + "/photos/" + n, timeout=90)
-    write_photos_js(["photos/" + n for n in names], {"photos/" + n: photo_info(os.path.join(out, n)) for n in names})
-    log("%d photos on the phone (%d new or changed)" % (len(names), changed))
-    push()
+        name, what = add_picture(os.path.join(folder, f), f)
+        log("%s: %s" % (f, what))
 
 
 def todo(args):
@@ -557,6 +660,6 @@ if __name__ == "__main__":
     elif a[0] == "fullscreen" and len(a) > 1: fullscreen(a[1])
     elif a[0] == "location": location_check(a[1:])
     elif a[0] == "image" and len(a) > 1: image(a[1])
-    elif a[0] == "photos": photos(os.path.expanduser(a[1]) if len(a) > 1 else None)
+    elif a[0] == "photos" and len(a) > 1: photos(os.path.expanduser(a[1]))
     elif a[0] == "todo": todo(a[1:])
     else: sys.exit(__doc__)

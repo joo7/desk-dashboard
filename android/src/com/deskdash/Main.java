@@ -355,6 +355,18 @@ public class Main extends Activity implements LocationListener {
       } catch (RuntimeException e) { Log.w(TAG, "beep failed", e); }
     }
 
+    /** Charge level and whether a charger is connected, as JSON. Only reads; this phone can't stop charging from software. */
+    @JavascriptInterface public String battery() {
+      JSONObject o = new JSONObject();
+      try {
+        Intent b = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        int scale = b.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
+        o.put("level", b.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100 / Math.max(scale, 1));
+        o.put("plugged", b.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+      } catch (Exception e) { Log.w(TAG, "battery read failed", e); }
+      return o.toString();
+    }
+
     @JavascriptInterface public void reload() { ui.post(new Runnable() { public void run() { load(); } }); }
   }
 

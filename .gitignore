@@ -28,3 +28,4 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+sync.log

@@ -1,6 +1,6 @@
 # Desk dashboard
 
-Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages:
+Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages. New here? The [setup guide](docs/SETUP-GUIDE.md) has the step-by-step process, screenshots, which phones work, and Wi-Fi security notes.
 
 - **Home**: clock, weather, the next hours and a whole photo, with air quality and sunrise/sunset below. Scroll down for your to-do list
 - **Photos**: full-screen slideshow
@@ -17,7 +17,7 @@ Weather refreshes every 15 minutes, and retries every 5 if the connection fails.
 ## Style
 
 The default style, **Photo colours**, takes its colours from the current photo, so the whole dashboard changes with each picture. Modern dark, E-ink, and Light with dark at night stay available under the gear icon.
-Colours are worked out on the laptop by `sync.py photos`. The font is Hind by Indian Type Foundry (SIL Open Font License, in `web/fonts/`).
+Colours are worked out on the laptop when a photo is added. The font is Hind by Indian Type Foundry (SIL Open Font License, in `web/fonts/`).
 
 ## Holidays
 
@@ -38,6 +38,7 @@ desk-dashboard/
 │   └── photo.jpg   default picture
 ├── tools/
 │   ├── sync.py     laptop helper: push files, install the app, send photos, diagnostics
+│   ├── photos_ui.py  drag-and-drop page for choosing the phone's photos (photos_ui.html is its page)
 │   └── test_sync.py tests for the to-do logic
 ├── android/        source of the Desk app (Java; no Gradle or Android Studio needed)
 │   ├── AndroidManifest.xml
@@ -48,7 +49,7 @@ desk-dashboard/
     └── DeskDash.apk   ready-built app
 ```
 
-Files that are generated or personal (`web/data.js`, `web/todo.txt`, `web/photos/`, `web/tasks.js`, `web/photos.js`,
+Files that are generated or personal (`web/data.js`, `web/todo.txt`, `web/tasks.js`, `web/photos.js`,
 `sync.log`, `.phone_ip`, `.phone_serial`, `.todo_ops.json`), downloaded build libraries (`android/libs/`)
 and the app signing key are listed in `.gitignore`.
 
@@ -70,8 +71,9 @@ With several devices attached, choose one: `python3 tools/sync.py pick <serial>`
 
 ```bash
 python3 tools/sync.py push                  # send changes after editing anything in web/
-python3 tools/sync.py photos                # make the phone's photos match the photos/ folder (see Adding photos)
-python3 tools/sync.py image x.jpg           # show one picture instead of the photo set (run photos again to go back)
+python3 tools/photos_ui.py                  # see, add, hide and delete the phone's photos (see Photos)
+python3 tools/sync.py photos <folder>       # add the pictures in a folder to the phone
+python3 tools/sync.py image x.jpg           # show one picture instead of the photo set (show them again on the photo page)
 python3 tools/sync.py todo list             # the phone's list. Also: add "text", done N, undone N, rm N, edit
 python3 tools/sync.py doctor                # check the connection when something is slow
 python3 tools/sync.py location on           # switch on the phone's location setting
@@ -89,12 +91,17 @@ python3 tools/test_sync.py                  # run the tests
 - **Turn the phone**: the layout follows, in portrait or landscape (the phone's rotation lock is respected)
 - **Tap the status line**: read a long message in full
 
-## Adding photos
+## Photos
 
-1. Copy pictures into `photos/` in this repo (or delete the ones you no longer want). It isn't committed to git.
-2. Run `python3 tools/sync.py photos`.
+The photos live on the phone, and only there. Run `python3 tools/photos_ui.py` and use the page it opens:
 
-Only new or changed pictures are processed and sent. Pictures you removed from the folder are removed from the phone.
+- It shows the photos on the phone, read from the phone each time.
+- Drop pictures anywhere on the page, or use **Add photos**. They're resized and sent straight to the phone.
+- Select photos to **Hide** them (they stay on the phone, and the dashboard stops showing them), **Show** them again, or **Delete** them from the phone.
+
+The page only runs on your computer. The laptop keeps only temporary previews and uploads while it runs, and removes them when it stops. The phone must be connected by USB or Wi-Fi. The phone keeps the screen-sized copy (1280 px), not your original, so keep your originals if you may want them later.
+
+To add a whole folder without the page: `python3 tools/sync.py photos <folder>`. It never removes anything.
 
 ## Photo quality
 
@@ -129,6 +136,7 @@ A small full-screen app that shows `/sdcard/dash/index.html`. Compared with the 
 With `place.auto: true`, the app sends nearby Wi-Fi and tower IDs to beaconDB every 15 minutes unless GPS has a recent
 fix, your position to Open-Meteo for weather, and to OpenStreetMap Nominatim for the place name.
 With `place.auto: false` it does no scanning or position lookups, and uses the place in `web/data.js`.
+If the phone's location mode uses Google's location service, Google also receives nearby Wi-Fi and tower details.
 
 The page lives on shared storage, where an app with storage permission could replace it. So the page can't reach the
 network directly, and the app only fetches from the weather hosts for it.
