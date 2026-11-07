@@ -2,6 +2,12 @@
 
 Turns an old Android phone (built for an Honor Holly, Android 4.4) into an always-on desk display with seven pages. New here? The [setup guide](docs/SETUP-GUIDE.md) has the step-by-step process, screenshots, and which phones work.
 
+![The six main pages of the dashboard](docs/images/overview-pages.jpg)
+
+![Three styles: photo colours, dark and E-ink](docs/images/overview-styles.jpg)
+
+*Screenshots use sample data.*
+
 - **Home**: clock, weather, the next hours and a whole photo, with air quality and sunrise/sunset below. Scroll down for your to-do list
 - **Photos**: full-screen slideshow
 - **This week**: today in detail, then six day cards

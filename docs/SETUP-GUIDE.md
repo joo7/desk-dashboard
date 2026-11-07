@@ -2,6 +2,12 @@
 
 This guide turns an old Android phone into an always-on desk display: a big clock, weather, a photo slideshow, a calendar, countdowns and a focus timer. It takes about 20 minutes.
 
+![The six main pages of the dashboard](images/overview-pages.jpg)
+
+![Three styles: photo colours, dark and E-ink](images/overview-styles.jpg)
+
+*Screenshots use sample data. The pages shown are Home, Photos, This week, Weather, Countdowns and Calendar. The styles are Photo colours, Modern dark and E-ink.*
+
 1. [What you need](#1-what-you-need)
 2. [Step by step](#2-step-by-step)
 3. [What it can do, with screenshots](#3-what-it-can-do)
