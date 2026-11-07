@@ -70,6 +70,8 @@ body.liveblur .photo .pb{-webkit-filter:blur(14px) brightness(.62);filter:blur(1
 .photo .pf{background:center/contain no-repeat}
 #frame div{top:0;left:0;right:0;bottom:0;border-radius:inherit}
 .photo .pd{display:none;background:#000;opacity:.42}
+.photo .pold{overflow:hidden;pointer-events:none;-webkit-transform:translateZ(0);transform:translateZ(0)}
+.photo .pold.go{opacity:0;-webkit-transition:opacity .8s ease;transition:opacity .8s ease}
 body.dimph .photo .pd{display:block}
 body.cssgray .photo .pf{-webkit-filter:grayscale(1);filter:grayscale(1)}
 body.liveblur.gray .photo .pb{-webkit-filter:grayscale(1) blur(14px) brightness(.62);filter:grayscale(1) blur(14px) brightness(.62)}
@@ -881,11 +883,24 @@ function fitPhotos(){
 }
 function savePhotoSpot(){lsSet('dash_pq',{seen:SEEN,left:TOSHOW,at:seenAt});}
 fitPhotos();
+// Crossfade: a copy of the old photo sits on top and fades away. The new photo is drawn directly, so it stays sharp.
+// Only on the page in view, and not with a live CSS filter, which is too slow on this phone.
+function fadeOld(box,src,baked){
+  var old=box.querySelector('.pold'),w;
+  if(old){box.removeChild(old);}
+  if(!baked||LIVEBLUR||CSSGRAY||!pageEl().contains(box)){return;}
+  if(!box.children[1].style.backgroundImage||box.children[1].style.backgroundImage.indexOf(src)>=0){return;}
+  w=document.createElement('div');w.className='pold';
+  w.appendChild(box.children[0].cloneNode(false));w.appendChild(box.children[1].cloneNode(false));
+  box.insertBefore(w,box.children[2]);
+  setTimeout(function(){w.className='pold go';},50);
+  setTimeout(function(){if(w.parentNode){w.parentNode.removeChild(w);}},950);
+}
 function setPhoto(src,fallback,isFallback){
   var im=new Image(),soft=src.replace(/\.jpg$/,'.blur.jpg');
   function apply(baked){
     var u='url("'+src+'")',ub=baked?'url("'+soft+'")':u,els=[$('frame'),$('pv')],i;
-    for(i=0;i<2;i++){els[i].children[0].style.backgroundImage=ub;els[i].children[1].style.backgroundImage=u;}
+    for(i=0;i<2;i++){fadeOld(els[i],src,baked);els[i].children[0].style.backgroundImage=ub;els[i].children[1].style.backgroundImage=u;}
     LIVEBLUR=!baked;CSSGRAY=!!isFallback&&grayOn();cls();sizeHome();
   }
   im.onload=function(){
