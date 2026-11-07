@@ -13,12 +13,12 @@ import javax.net.ssl.*;
 /** HTTP(S) for Android 4.4: uses Conscrypt for modern TLS and trusts a few modern root certificates the old phone lacks. */
 class Net {
   static SSLSocketFactory factory;
-  static String agent = "DeskDash (personal desk dashboard)";
+  static String agent = "DeskDash (https://github.com/joo7/desk-dashboard)";
 
   static synchronized void init(Context ctx) {
     if (factory != null) return;
     try {
-      agent = "DeskDash/" + ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName + " (personal desk dashboard)";
+      agent = "DeskDash/" + ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName + " (https://github.com/joo7/desk-dashboard)";
       TrustManagerFactory sysF = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       sysF.init((KeyStore) null);
       final X509TrustManager sys = (X509TrustManager) sysF.getTrustManagers()[0];
